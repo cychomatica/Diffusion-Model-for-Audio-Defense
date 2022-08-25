@@ -35,7 +35,7 @@ if __name__ == '__main__':
     parser.add_argument('--gpu', type=int, default=0)
 
     '''file saving arguments'''
-    parser.add_argument('--save_path', type=str, default='experiments/certified_robustness/records')
+    parser.add_argument('--save_path', type=str, default='_Experiments/certified_robustness/records')
 
     args = parser.parse_args()
 
