@@ -14,5 +14,5 @@ certified_robustness_eval.py \
 --sigma $SIGMA \
 --num_sampling $N \
 --gpu $GPU_ID \
---save_path _Experiments/certified_robustness/records/2ShotsRev \
-> _Experiments/certified_robustness/log/SC09-Certified-$DEFENSE-2ShotsRev-sigma=$SIGMA-N=$N.log&
+--save_path _Experiments/certified_robustness/records \
+> _Experiments/certified_robustness/log/SC09-Certified-$DEFENSE-sigma=$SIGMA-N=$N.log&
