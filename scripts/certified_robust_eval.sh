@@ -2,8 +2,8 @@ set -e
 
 BATCH_SIZE=50
 GPU_ID=0
-SIGMA=0.25
-N=1000
+SIGMA=0.5
+N=100000
 DEFENSE=diffusion
 
 nohup \
