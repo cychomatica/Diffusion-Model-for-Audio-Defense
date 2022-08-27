@@ -6,3 +6,4 @@ After downloading, set the right path in function [create_diffwave_model](https:
 and [create_model](https://github.com/cychomatica/Diffusion-Model-for-Audio-Defense/blob/98f8ce7973926442f23eff0a9e603a1d40bbe5cf/audio_models/ConvNets_SpeechCommands/create_model.py#L7)
 .
 
+The conda environment setup is included in file [environment.yml](https://github.com/cychomatica/Diffusion-Model-for-Audio-Defense/blob/master/environment.yml)
