@@ -8,3 +8,9 @@ and [`create_model`](https://github.com/cychomatica/Diffusion-Model-for-Audio-De
 
 The conda environment setup is included in file [`environment.yml`](https://github.com/cychomatica/Diffusion-Model-for-Audio-Defense/blob/master/environment.yml). 
 Run `conda env create -f environment.yml` to copy the environment. 
+
+For certified robustness experiments, please run `scripts/certified_robust_eval.sh`. 
+You can set certification method (DEFENSE), sampling number (N) and sigma. 
+At present, we need to conduct **N=100,000** and **sigma=0.25, 0.5 and 1.0** for **DEFENSE=diffusion**.
+
+Argument `--save_path` is the location where the experimental records are saved. 
