@@ -1,0 +1,14 @@
+use_gpu True
+gpu id: 2
+  0%|          | 0/100 [00:00<?, ?audios/s]  0%|          | 0/100 [37:41<?, ?audios/s, certified robust acc with eps=0.0: =24.0000%, certified robust acc with eps=0.5: =16.0000%, certified robust acc with eps=1.0: =6.0000%, certified robust acc with eps=1.5: =4.0000%, certified robust acc with eps=2.0: =2.0000%, certified robust acc with eps=2.5: =0.0000%, certified robust acc with eps=3.0: =0.0000%, certified robust acc with eps=3.5: =0.0000%, certified robust acc with eps=4.0: =0.0000%] 50%|█████     | 50/100 [37:41<37:41, 45.22s/audios, certified robust acc with eps=0.0: =24.0000%, certified robust acc with eps=0.5: =16.0000%, certified robust acc with eps=1.0: =6.0000%, certified robust acc with eps=1.5: =4.0000%, certified robust acc with eps=2.0: =2.0000%, certified robust acc with eps=2.5: =0.0000%, certified robust acc with eps=3.0: =0.0000%, certified robust acc with eps=3.5: =0.0000%, certified robust acc with eps=4.0: =0.0000%]100%|██████████| 100/100 [1:15:14<00:00, 45.22s/audios, certified robust acc with eps=0.0: =23.0000%, certified robust acc with eps=0.5: =13.0000%, certified robust acc with eps=1.0: =7.0000%, certified robust acc with eps=1.5: =4.0000%, certified robust acc with eps=2.0: =3.0000%, certified robust acc with eps=2.5: =0.0000%, certified robust acc with eps=3.0: =0.0000%, certified robust acc with eps=3.5: =0.0000%, certified robust acc with eps=4.0: =0.0000%]150audios [1:15:14, 28.42s/audios, certified robust acc with eps=0.0: =23.0000%, certified robust acc with eps=0.5: =13.0000%, certified robust acc with eps=1.0: =7.0000%, certified robust acc with eps=1.5: =4.0000%, certified robust acc with eps=2.0: =3.0000%, certified robust acc with eps=2.5: =0.0000%, certified robust acc with eps=3.0: =0.0000%, certified robust acc with eps=3.5: =0.0000%, certified robust acc with eps=4.0: =0.0000%]                     100%|██████████| 100/100 [1:15:14<00:00, 45.15s/audios, certified robust acc with eps=0.0: =23.0000%, certified robust acc with eps=0.5: =13.0000%, certified robust acc with eps=1.0: =7.0000%, certified robust acc with eps=1.5: =4.0000%, certified robust acc with eps=2.0: =3.0000%, certified robust acc with eps=2.5: =0.0000%, certified robust acc with eps=3.0: =0.0000%, certified robust acc with eps=3.5: =0.0000%, certified robust acc with eps=4.0: =0.0000%]
+on 100 test examples: 
+certified robust test accuracy: 
+eps=0.0: 23.0000
+eps=0.5: 13.0000
+eps=1.0: 7.0000
+eps=1.5: 4.0000
+eps=2.0: 3.0000
+eps=2.5: 0.0000
+eps=3.0: 0.0000
+eps=3.5: 0.0000
+eps=4.0: 0.0000

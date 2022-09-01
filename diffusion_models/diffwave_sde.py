@@ -32,7 +32,7 @@ def restore_checkpoint(ckpt_dir, state, device):
 
 
 class RevVPSDE(torch.nn.Module):
-    def __init__(self, model: DiffWave, score_type='ddpm', beta_min=0.0001, beta_max=0.02, N=200,
+    def __init__(self, model: DiffWave, score_type='ddpm', beta_min=0.02, beta_max=4, N=200,
                  audio_shape=(1, 16000), model_kwargs=None):
         """Construct a Variance Preserving SDE.
 
@@ -50,10 +50,10 @@ class RevVPSDE(torch.nn.Module):
         self.model_kwargs = model_kwargs
         self.audio_shape = audio_shape
 
-        self.beta_0 = beta_min * N
-        self.beta_1 = beta_max * N
+        self.beta_0 = beta_min
+        self.beta_1 = beta_max
         self.N = N
-        self.discrete_betas = torch.linspace(beta_min, beta_max, N)
+        self.discrete_betas = torch.linspace(beta_min/N, beta_max/N, N)
         self.alphas = 1. - self.discrete_betas
         self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)
         self.sqrt_alphas_cumprod = torch.sqrt(self.alphas_cumprod)
@@ -74,6 +74,8 @@ class RevVPSDE(torch.nn.Module):
         # beta_t = self.beta_0 + (t * self.N - 1) / (self.N - 1) * (self.beta_1 - self.beta_0) # according to Song et al.
         drift = -0.5 * beta_t[:, None] * x
         diffusion = torch.sqrt(beta_t)
+        # if t[0].item() < 1 / 200: 
+        #     diffusion = 0 * diffusion
         return drift, diffusion
 
     def rvpsde_fn(self, t, x, return_type='drift'):
@@ -87,11 +89,11 @@ class RevVPSDE(torch.nn.Module):
 
             if self.score_type == 'guided_diffusion':
                 # model output is epsilon
-                disc_steps = self._scale_timesteps(t)[0]    # (batch_size, ) -> (), from float in [0,1] to int in [0, 200]
-                epsilon_theta, _, _ = self.model.compute_coefficients(x_audio, disc_steps)  # x_audio.shape
+                # disc_steps = self._scale_timesteps(t)[0]    # (batch_size, ) -> (), from float in [0,1] to int in [0, 200]
+                # epsilon_theta, _, _ = self.model.compute_coefficients(x_audio, disc_steps)  # x_audio.shape
+                epsilon_theta = self.model.compute_eps_t(x_audio, t[0] * self.N)  # x_audio.shape
                 epsilon_theta = epsilon_theta.view(x.shape[0], -1)  # x_audio.shape -> (batch_size, )
-                score = - epsilon_theta / self.sqrt_1m_alphas_cumprod[disc_steps]
-                # score = _extract_into_tensor(self.sqrt_1m_alphas_cumprod_neg_recip_cont, t, x.shape) * epsilon_theta
+                score = _extract_into_tensor(self.sqrt_1m_alphas_cumprod_neg_recip_cont, t, x.shape) * epsilon_theta
 
             else:
                 raise NotImplementedError(f'Unknown score type in RevVPSDE: {self.score_type}!')
@@ -177,7 +179,7 @@ class RevGuidedDiffusion(torch.nn.Module):
             x = x0 * a[total_noise_levels - 1].sqrt() + e * (1.0 - a[total_noise_levels - 1]).sqrt()
 
             epsilon_dt0, epsilon_dt1 = 0, 1e-5
-            t0, t1 = 1 - (self.args.t-1) * 1. / self.T + epsilon_dt0, 1 - epsilon_dt1
+            t0, t1 = 1 - self.args.t * 1. / self.T + epsilon_dt0, 1 - epsilon_dt1
             t_size = 2
             ts = torch.linspace(t0, t1, t_size).to(self.device)
 
@@ -188,8 +190,10 @@ class RevGuidedDiffusion(torch.nn.Module):
                 bm = torchsde.BrownianInterval(t0=t0, t1=t1, size=(batch_size, state_size), device=self.device)
                 xs_ = torchsde.sdeint_adjoint(self.rev_vpsde, x_, ts, method='euler', bm=bm)
             else:
-                xs_ = torchsde.sdeint_adjoint(self.rev_vpsde, x_, ts, method='euler', dt=1./self.T)
+                xs_ = torchsde.sdeint_adjoint(self.rev_vpsde, x_, ts, method='euler')#, dt=1./self.T)#-epsilon_dt1/self.args.t)
             x0 = xs_[-1].view(x.shape)  # (batch_size, 1, 16000)
+
+            # x_ddpm_0 = self.model.reverse(x)
 
             xs.append(x0)
 

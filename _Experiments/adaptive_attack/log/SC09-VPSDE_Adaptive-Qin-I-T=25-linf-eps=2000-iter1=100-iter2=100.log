@@ -1,0 +1,13 @@
+use_gpu True
+gpu id: 2
+model_config: configs/config.json
+t: 25, rand_t: False, t_delta: 15
+use_bm: False
+  0%|          | 0/104 [00:00<?, ?audios/s]Adversarial attack stage 1 for x_4 was not successful
+Adversarial attack stage 1 for x_5 was not successful
+/home/shutong/anaconda3/envs/shutong/lib/python3.9/site-packages/torch/functional.py:695: UserWarning: stft will soon require the return_complex parameter be given for real inputs, and will further require that return_complex=True in a future PyTorch release. (Triggered internally at  /opt/conda/conda-bld/pytorch_1646756402876/work/aten/src/ATen/native/SpectralOps.cpp:798.)
+  return _VF.stft(input, n_fft, hop_length, win_length, window,  # type: ignore[attr-defined]
+  0%|          | 0/104 [9:52:46<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =75.0000%, CW robust acc: =25.0000%, ImpAtk success rate: =100.0000%]  8%|▊         | 8/104 [9:52:46<118:33:15, 4445.79s/audios, orig clean acc: =100.0000%, denoised clean acc: =75.0000%, CW robust acc: =25.0000%, ImpAtk success rate: =100.0000%]Adversarial attack stage 1 for x_0 was not successful
+Adversarial attack stage 1 for x_4 was not successful
+Adversarial attack stage 1 for x_6 was not successful
+ 15%|█▌        | 16/104 [19:46:07<108:40:29, 4445.79s/audios, orig clean acc: =100.0000%, denoised clean acc: =87.5000%, CW robust acc: =31.2500%, ImpAtk success rate: =100.0000%] 23%|██▎       | 24/104 [19:46:07<62:14:25, 2800.82s/audios, orig clean acc: =100.0000%, denoised clean acc: =87.5000%, CW robust acc: =31.2500%, ImpAtk success rate: =100.0000%] 

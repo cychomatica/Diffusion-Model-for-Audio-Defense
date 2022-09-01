@@ -21,8 +21,8 @@ class RobustCertificate():
         
         if self.denoiser is not None:
             # x_in = self.denoiser.denoise(x_in)
-            # x_in = self.denoiser.one_shot_denoise(x_in)
-            x_in = self.denoiser.two_shot_denoise(x_in)
+            x_in = self.denoiser.one_shot_denoise(x_in)
+            # x_in = self.denoiser.two_shot_denoise(x_in)
 
         if self.transform is not None:
             x_in = self.transform(x_in)

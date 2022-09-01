@@ -115,6 +115,13 @@ class DiffWave(torch.nn.Module):
         
         return epsilon_theta, mu_theta, sigma_theta
 
+    def compute_eps_t(self, x_t: Union[torch.Tensor, np.ndarray], t):
+
+        diffusion_steps = t * torch.ones((x_t.shape[0], 1)).cuda()
+        epsilon_theta = self.model((x_t, diffusion_steps))
+
+        return epsilon_theta
+
     def one_shot_denoise(self, x_t: Union[torch.Tensor, np.ndarray]):
 
         t = self.reverse_timestep - 1

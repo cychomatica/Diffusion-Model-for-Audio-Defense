@@ -6,35 +6,6 @@ from typing import TYPE_CHECKING, Optional, Tuple, Union
 import numpy as np
 import scipy.signal as ss
 
-import time
-
-def project_to_norm_ball(x: Union[torch.Tensor, np.ndarray], p: str, eps: float):
-
-    if p == 'linf':
-        x_ = torch.clamp(x, -eps, eps)
-    elif p == 'l2':
-        norm_x = torch.norm(input=x, dim=(1,2))[:,None,None]
-        factor = torch.min(torch.ones_like(norm_x), eps / norm_x)
-        x_ = x * factor
-    else:
-        raise NotImplementedError(f'Unsupported norm: {p}!')
-    
-    return x_
-
-def lp_norm(x: Union[torch.Tensor, np.ndarray], p: str):
-
-    if p == 'linf':
-        norm = torch.max(torch.abs(x))
-    elif p == 'l2':
-        if x.ndim == 3:
-            norm = torch.norm(input=x, dim=(1,2))[:,None,None]
-        elif x.ndim == 2: 
-            norm = torch.norm(input=x, dim=(1,))
-    else:
-        raise NotImplementedError(f'Unsupported norm: {p}!')
-    
-    return norm
-
 class PsychoacousticMasker:
     """
     Implements psychoacoustic model of Lin and Abdulla (2015) following Qin et al. (2019) simplifications.
@@ -281,10 +252,11 @@ class AudioAttack():
     def __init__(
         self,
         model: torch.nn.Module,
+        transform = None, 
+        defender = None, 
         masker: "PsychoacousticMasker" = None,
         criterion: "_Loss" = CrossEntropyLoss(),  
         eps: float = 2000.0,
-        norm: str = 'linf', 
         learning_rate_1: float = 100.0,
         max_iter_1: int = 1000,
         alpha: float = 0.05,
@@ -301,12 +273,12 @@ class AudioAttack():
         ) -> None:
 
         self.model = model
+        self.transform = transform
+        self.defender = defender
         self.masker = masker
         self.criterion = criterion
 
         self.eps = eps
-        self.norm = norm
-
         self.learning_rate_1 = learning_rate_1
         self.max_iter_1 = max_iter_1
         self.alpha = alpha
@@ -323,12 +295,6 @@ class AudioAttack():
         self.num_iter_decrease_alpha = num_iter_decrease_alpha
         
         self.scale_factor = 2**-15
-
-        if self.masker is not None:
-            self._window_size = self.masker.window_size
-            self._hop_size = self.masker.hop_size
-            self._sample_rate = self.masker.sample_rate
-
     
     def generate(self, x: Union[torch.Tensor, np.ndarray], y: Union[torch.Tensor, np.ndarray], targeted: bool=True):
         
@@ -340,13 +306,12 @@ class AudioAttack():
         if isinstance(type(y), np.ndarray): 
             y = torch.from_numpy(y)
         
-        x_adv, success_stage_1 = self.stage_1(x, y)
+        x_adv, success_count = self.stage_1(x, y)
 
         if self.max_iter_2 > 0:
-            x_adv, success_stage_2 = self.stage_2(x, x_adv, y)
-            return x_adv, success_stage_1, success_stage_2
-        else:
-            return x_adv, success_stage_1, 0
+            x_adv = self.stage_2(x_adv, y)
+
+        return x_adv, success_count
 
     def stage_1(self, x: torch.Tensor, y: torch.Tensor):
         
@@ -366,75 +331,71 @@ class AudioAttack():
         delta = torch.zeros_like(x, requires_grad=True)
         epsilon = [eps] * batch_size
         
-        for i in range(0, self.max_iter_1 + 1):
+        for i in range(1, self.max_iter_1 + 1):
             
             # with torch.autograd.detect_anomaly():
-            '''update perturbed inputs and predictions'''
+                
+            '''update perturbed inputs'''
+            x_in = x + delta
+
+            if self.defender is not None: 
+                x_in = self.defender(x_in)
+            if self.transform is not None:
+                x_in = self.transform(x_in)
+
+            y_adv = self.model(x_in)
+            loss = self.criterion(y_adv, y)
+            
+            loss.backward()
+
             x_pert = x + delta
-            y_adv = self.model(x_pert)
 
-            ''' 
-                save current best adv example. 
-                if the prediction of a clean example is wrong, note it as an adv example.
-                (for the convenience of computing robust acc)
-            '''
-            prediction = y_adv.max(1, keepdim=True)[1]
-            if self._targeted: 
-                for j in range(batch_size):
-                    if prediction[j] == y[j]:
-                        x_adv[j] = x_pert[j]
-            else: 
-                for j in range(batch_size):
-                    if prediction[j] != y[j]:
-                        x_adv[j] = x_pert[j]
+            if i % self.num_iter_decrease_eps == 0:
 
-            '''decrease max norm bound epsilon if attack succeeds'''
-            if i % self.num_iter_decrease_eps == 0 and i > 0:
+                prediction = y_adv.max(1, keepdim=True)[1]
+
                 if self._targeted: 
                     for j in range(batch_size):
                         if prediction[j] == y[j]:
-                            perturbation_norm = lp_norm(delta.data[j], p=self.norm).item() #torch.max(torch.abs(delta.data[j]))
+                            # decrease max norm bound epsilon
+                            perturbation_norm = torch.max(torch.abs(delta.data[j]))
                             if epsilon[j] > perturbation_norm:
                                 epsilon[j] = perturbation_norm
                             epsilon[j] *= self.decrease_factor_eps
+                            # save current best adversarial example
+                            x_adv[j] = x_pert[j]
                 else:
                     for j in range(batch_size):
                         if prediction[j] != y[j]:
-                            perturbation_norm = lp_norm(delta.data[j], p=self.norm).item() #torch.max(torch.abs(delta.data[j]))
+                            # decrease max norm bound epsilon
+                            perturbation_norm = torch.max(torch.abs(delta.data[j]))
                             if epsilon[j] > perturbation_norm:
                                 epsilon[j] = perturbation_norm
                             epsilon[j] *= self.decrease_factor_eps
-            
-            if i == self.max_iter_1:
-                break
-
-            '''compute gradients'''
-            loss = self.criterion(y_adv, y)
-            loss.backward()
+                            # save current best adversarial example
+                            x_adv[j] = x_pert[j]
 
             '''update perturbations'''
             if self._targeted:
                 delta.data = delta.data - lr * delta.grad.data.sign()
             else:
                 delta.data = delta.data + lr * delta.grad.data.sign()
-            # delta.data = torch.cat([torch.clamp(torch.unsqueeze(p, 1), -e, e) for p, e in zip(delta.data, epsilon)], dim=0)
-            delta.data = torch.cat([project_to_norm_ball(torch.unsqueeze(p, 1), self.norm, e) for p, e in zip(delta.data, epsilon)], dim=0)
-            delta.data = (x + delta.data).clamp(-1,1) - x
+            delta.data = torch.cat([torch.clamp(torch.unsqueeze(p, 1), -e, e) for p, e in zip(delta.data, epsilon)], dim=0)
             delta.grad.zero_()
         
         x_pert = x + delta
-        success_stage_1 = batch_size
+        success_count = batch_size
 
         ''' return perturbed x if no adversarial example found '''
         for j in range(batch_size):
             if x_adv[j] is None:
                 print("Adversarial attack stage 1 for x_{} was not successful".format(j))
                 x_adv[j] = x_pert[j]
-                success_stage_1 = success_stage_1 - 1 
+                success_count = success_count - 1 
 
         x_adv = torch.unsqueeze(torch.cat(x_adv, dim=0), 1)
 
-        return x_adv, success_stage_1
+        return x_adv, success_count
     
     def stage_2(self, x: torch.Tensor, x_adv: torch.Tensor, y: torch.Tensor=None):
 
@@ -445,389 +406,91 @@ class AudioAttack():
         attack. The resulting adversarial audio samples are able to successfully deceive the ASR estimator and are
         imperceptible to the human ear.
 
-        :param x: An array with the original inputs to be attacked. Shape: (batch_size, n, length).
-        :param x_adversarial: An array with the adversarial examples. Shape: (batch_size, n, length).
+        :param x: An array with the original inputs to be attacked.
+        :param x_adversarial: An array with the adversarial examples.
         :param y: Target values of shape (batch_size,). Each sample in `y` is a string and it may possess different
             lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: An array with the imperceptible, adversarial outputs.
         """
 
-        if x.dtype == torch.float32:
-            lr = self.scale_factor * self.learning_rate_2
-        else: 
-            lr = self.learning_rate_2
-
         batch_size = x.shape[0]
         alpha_min = 0.0005
 
+        # for ragged input, use object dtype
+        dtype = torch.float32 if x.ndim != 1 else object
+
         early_stop = [False] * batch_size
-        alpha = torch.tensor([self.alpha] * batch_size, dtype=torch.float32).to(x.device)
+
+        alpha = torch.tensor([self.alpha] * batch_size, dtype=torch.float32)
         loss_theta_previous = [torch.inf] * batch_size
-        loss_theta = [torch.inf] * batch_size
         x_imperceptible = [None] * batch_size
 
         # if inputs are *not* ragged, we can't multiply alpha * gradients_theta
         if x.ndim != 1:
-            # alpha = torch.unsqueeze(alpha, axis=-1)
-            alpha = alpha[:,None,None]
+            alpha = torch.unsqueeze(alpha, axis=-1)
 
         masking_threshold, psd_maximum = self._stabilized_threshold_and_psd_maximum(x)
 
-        delta = torch.zeros_like(x, requires_grad=True)
-        delta.data = x_adv.data - x.data
+        x_pert = x_adv.clone()
 
-        for i in range(0, self.max_iter_2 + 1):
+        for i in range(1, self.max_iter_2 + 1):
+            # get perturbation
+            perturbation = x_pert - x
+
+            # get loss gradients of both losses
             
-            '''update perturbed inputs and predictions'''
-            x_pert = x + delta
-            y_adv = self.model(x_pert)
 
-            ''' 
-                save current best imp adv example. 
-                (for the convenience of computing attack success rate)
-            '''
-            prediction = y_adv.max(1, keepdim=True)[1]
-            if self._targeted: 
-                for j in range(batch_size):
-                    if prediction[j] == y[j] and loss_theta[j] < loss_theta_previous[j]:
-                        x_imperceptible[j] = x_pert[j]
-                        loss_theta_previous[j] = loss_theta[j]
-            else: 
-                for j in range(batch_size):
-                    if prediction[j] != y[j] and loss_theta[j] < loss_theta_previous[j]:
-                        x_imperceptible[j] = x_pert[j]
-                        loss_theta_previous[j] = loss_theta[j]
-
-            '''update alpha'''
-            if (i % self.num_iter_increase_alpha == 0 or i % self.num_iter_decrease_alpha == 0) and i > 0:
-
-                if self._targeted:
-                    for j in range(batch_size):
-                        # validate if adversarial target succeeds, i.e. f(x_perturbed)==y
-                        if i % self.num_iter_increase_alpha == 0 and prediction[j] == y[j]:
-                            # increase alpha
-                            alpha[j] *= self.increase_factor_alpha
-                        # validate if adversarial target fails, i.e. f(x_perturbed)!=y
-                        if i % self.num_iter_decrease_alpha == 0 and prediction[j] != y[j]:
-                            # decrease alpha
-                            alpha[j] = max(alpha[j] * self.decrease_factor_alpha, alpha_min)
-                    
-                else:
-                    for j in range(batch_size):
-                        # validate if adversarial target succeeds, i.e. f(x_perturbed)!=y
-                        if i % self.num_iter_increase_alpha == 0 and prediction[j] != y[j]:
-                            # increase alpha
-                            alpha[j] *= self.increase_factor_alpha
-                        # validate if adversarial target fails, i.e. f(x_perturbed)==y
-                        if i % self.num_iter_decrease_alpha == 0 and prediction[j] == y[j]:
-                            # decrease alpha
-                            alpha[j] = max(alpha[j] * self.decrease_factor_alpha, alpha_min)
-
-            if i == self.max_iter_2:
-                break
-            
-            '''compute gradients'''
-            loss = self.criterion(y_adv, y)
-            loss.backward()
-            gradients_net = delta.grad.data
+            gradients_net = self.estimator.loss_gradient(x_pert, y, batch_mode=True)
             gradients_theta, loss_theta = self._loss_gradient_masking_threshold(
-                delta, x, masking_threshold, psd_maximum
+                perturbation, x, masking_threshold, psd_maximum
             )
-            '''update perturbations'''
+
+            # check shapes match, otherwise unexpected errors can occur
             assert gradients_net.shape == gradients_theta.shape
-            if self._targeted:
-                delta.data = delta.data - lr * (gradients_net + alpha * gradients_theta)
-            else:
-                delta.data = delta.data + lr * (gradients_net + alpha * gradients_theta)
-            delta.data = (x + delta.data).clamp(-1,1) - x
-            
+
+            # perform gradient descent steps
+            x_pert = x_pert - self.learning_rate_2 * (gradients_net + alpha * gradients_theta)
+
+            if i % self.num_iter_increase_alpha == 0 or i % self.num_iter_decrease_alpha == 0:
+                prediction = self.estimator.predict(x_pert, batch_size=batch_size)
+                for j in range(batch_size):
+                    # validate if adversarial target succeeds, i.e. f(x_perturbed)=y
+                    if i % self.num_iter_increase_alpha == 0 and prediction[j] == y[j].upper():
+                        # increase alpha
+                        alpha[j] *= self.increase_factor_alpha
+                        # save current best imperceptible, adversarial example
+                        if loss_theta[j] < loss_theta_previous[j]:
+                            x_imperceptible[j] = x_pert[j]
+                            loss_theta_previous[j] = loss_theta[j]
+
+                    # validate if adversarial target fails, i.e. f(x_perturbed)!=y
+                    if i % self.num_iter_decrease_alpha == 0 and prediction[j] != y[j].upper():
+                        # decrease alpha
+                        alpha[j] = max(alpha[j] * self.decrease_factor_alpha, alpha_min)
+
             # note: avoids nan values in loss theta, which can occur when loss converges to zero.
             for j in range(batch_size):
                 if loss_theta[j] < self.loss_theta_min and not early_stop[j]:
-                    print(
-                        "Batch sample {} reached minimum threshold of {} for theta loss.".format(j, self.loss_theta_min)
-                        )
+                    # logger.warning(
+                    #     "Batch sample %s reached minimum threshold of %s for theta loss.", j, self.loss_theta_min
+                    # )
                     early_stop[j] = True
             if all(early_stop):
-                print(
-                    "All batch samples reached minimum threshold for theta loss. Stopping early at iteration {}".format(i)
-                     )
+                # logger.warning(
+                #     "All batch samples reached minimum threshold for theta loss. Stopping early at iteration %s.", i
+                # )
                 break
 
         # return perturbed x if no adversarial example found
-        success_stage_2 = batch_size
-
         for j in range(batch_size):
             if x_imperceptible[j] is None:
-                print("Adversarial attack stage 2 for x_{} was not successful".format(j))
+                # logger.critical("Adversarial attack stage 2 for x_%s was not successful", j)
                 x_imperceptible[j] = x_pert[j]
-                success_stage_2 = success_stage_2 - 1 
 
-        x_imperceptible = torch.unsqueeze(torch.cat(x_imperceptible, dim=0), 1)
+        return np.array(x_imperceptible, dtype=dtype)
 
-        return x_imperceptible, success_stage_2
-    
-    def _loss_gradient_masking_threshold(
-            self,
-            perturbation: torch.Tensor,
-            x: torch.Tensor,
-            masking_threshold_stabilized: torch.Tensor,
-            psd_maximum_stabilized: torch.Tensor,
-        ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Compute loss gradient of the global masking threshold w.r.t. the PSD approximate of the perturbation.
+        return x
 
-        The loss is defined as the hinge loss w.r.t. to the frequency masking threshold of the original audio input `x`
-        and the normalized power spectral density estimate of the perturbation. In order to stabilize the optimization
-        problem during back-propagation, the `10*log`-terms are canceled out.
-
-        :param perturbation: Adversarial perturbation.
-        :param x: An array with the original inputs to be attacked.
-        :param masking_threshold_stabilized: Stabilized masking threshold for the original input `x`.
-        :param psd_maximum_stabilized: Stabilized maximum across frames, i.e. shape is `(batch_size, frame_length)`, of
-            the original unnormalized PSD of `x`.
-        :return: Tuple consisting of the loss gradient, which has same shape as `perturbation`, and loss value.
-        """
-        # pad input
-        perturbation_padded, delta_mask = self.pad_sequence_input(perturbation.detach().cpu().numpy()) # shape: (batch_size, length)
-        perturbation_padded, delta_mask = torch.from_numpy(perturbation_padded).to(x.device), torch.from_numpy(delta_mask).to(x.device)
-        
-        perturbation_padded.requires_grad = True
-        psd_perturbation = self._approximate_power_spectral_density(perturbation_padded, psd_maximum_stabilized)
-        loss = torch.mean(torch.nn.ReLU()(psd_perturbation - masking_threshold_stabilized), dim=(1, 2), keepdims=False)
-        loss.sum().backward()
-
-        gradients_padded = perturbation_padded.grad.detach()
-        loss_value = loss.detach()
-
-        # undo padding, i.e. change gradients shape from (nb_samples, max_length) to (nb_samples)
-        lengths = delta_mask.sum(axis=1)
-        gradients = []
-        for gradient_padded, length in zip(gradients_padded, lengths):
-            gradient = gradient_padded[None, :length] # shape: (1, length)
-            gradients.append(gradient)
-
-        gradients = torch.unsqueeze(torch.cat(gradients, dim=0), 1) # shape: (batch_size, 1, length)
-        return gradients, loss_value
-
-    def _approximate_power_spectral_density(
-        self, perturbation: torch.Tensor, psd_maximum_stabilized: torch.Tensor
-        ) -> torch.Tensor:
-        """
-        Approximate the power spectral density for a perturbation `perturbation` in PyTorch.
-
-        See also `ImperceptibleASR._approximate_power_spectral_density_tf`.
-        """
-        # compute short-time Fourier transform (STFT)
-        # pylint: disable=W0212
-        stft_matrix = torch.stft(
-            perturbation,
-            n_fft=self._window_size,
-            hop_length=self._hop_size,
-            win_length=self._window_size,
-            center=False,
-            window=torch.hann_window(self._window_size).to(perturbation.device),
-        ).to(perturbation.device)
-
-        # compute power spectral density (PSD)
-        # note: fixes implementation of Qin et al. by also considering the square root of gain_factor
-        gain_factor = np.sqrt(8.0 / 3.0)
-        stft_matrix_abs = torch.sqrt(torch.sum(torch.square(gain_factor * stft_matrix / self._window_size), -1))
-        psd_matrix = torch.square(stft_matrix_abs)
-
-        # approximate normalized psd: psd_matrix_approximated = 10^((96.0 - psd_matrix_max + psd_matrix)/10)
-        psd_matrix_approximated = pow(10.0, 9.6) / psd_maximum_stabilized.reshape(-1, 1, 1) * psd_matrix
-
-        # return PSD matrix such that shape is (batch_size, window_size // 2 + 1, frame_length)
-        return psd_matrix_approximated
-
-    def _stabilized_threshold_and_psd_maximum(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Return batch of stabilized masking thresholds and PSD maxima.
-
-        :param x: An array with the original inputs to be attacked.
-        :return: Tuple consisting of stabilized masking thresholds and PSD maxima.
-        """
-        masking_threshold = []
-        psd_maximum = []
-        x_padded, _ = self.pad_sequence_input(x.detach().cpu().numpy()) # shape: (batch_size, length, )
-
-        for x_i in x_padded:
-            m_t, p_m = self.masker.calculate_threshold_and_psd_maximum(x_i)
-            masking_threshold.append(m_t)
-            psd_maximum.append(p_m)
-        # stabilize imperceptible loss by canceling out the "10*log" term in power spectral density maximum and
-        # masking threshold
-        masking_threshold_stabilized = 10 ** (np.array(masking_threshold) * 0.1) 
-        psd_maximum_stabilized = 10 ** (np.array(psd_maximum) * 0.1)
-        
-        masking_threshold_stabilized = torch.from_numpy(masking_threshold_stabilized).to(x.device)
-        psd_maximum_stabilized = torch.from_numpy(psd_maximum_stabilized).to(x.device)
-
-        # masking_threshold_stabilized = torch.unsqueeze(masking_threshold_stabilized, dim=1)
-        # psd_maximum_stabilized = torch.unsqueeze(psd_maximum_stabilized, dim=1)
-
-        return masking_threshold_stabilized, psd_maximum_stabilized
-    
-    def pad_sequence_input(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Apply padding to a batch of 1-dimensional samples such that it has shape of (batch_size, max_length).
-
-        :param x: A batch of 1-dimensional input data, e.g. `np.array([np.array([1,2,3]), np.array([4,5,6,7])])`.
-        :return: The padded input batch and its corresponding mask.
-        """
-        if x.ndim > 2:
-            x = np.squeeze(x, axis=1)
-
-        max_length = max(map(len, x))
-        batch_size = x.shape[0]
-
-        # note: use dtype of inner elements
-        x_padded = np.zeros((batch_size, max_length), dtype=x[0].dtype)
-        x_mask = np.zeros((batch_size, max_length), dtype=bool)
-
-        for i, x_i in enumerate(x):
-            x_padded[i, : len(x_i)] = x_i
-            x_mask[i, : len(x_i)] = 1
-        return x_padded, x_mask
-
-
-'''Black-box Attack'''
-class SquareAttack():
-
-    def __init__(
-        self,
-        model: torch.nn.Module, 
-        eps, 
-        norm, 
-        n_iter, 
-        p_init
-        ) -> None:
-        
-        self.model = model
-        self.eps = eps
-        self.norm = norm
-        self.n_iter = n_iter
-        self.p_init = p_init
-        # self._targeted = False
-    
-    def loss(self, y: torch.Tensor, logits: torch.Tensor, targeted: bool=False, loss_type: str='margin'):
-
-        if loss_type == 'margin':
-            preds_correct_class = (logits * y).sum(1, keepdims=True)
-            diff = preds_correct_class - logits  # difference between the correct class and all other classes
-            diff[y] = torch.inf  # to exclude zeros coming from f_correct - f_correct
-            margin = diff.min(1, keepdims=True)
-            loss = margin * -1 if targeted else margin
-        elif loss_type == 'cross_entropy':
-            probs = torch.nn.Softmax(dim=1)(logits)
-            loss = -torch.log(probs[y])
-            loss = loss * -1 if not targeted else loss
-        else:
-            raise NotImplementedError(f'Unsupported loss type: {loss_type}!')
-
-        return loss.flatten()
-
-    def p_selection(self, p_init, it, n_iters):
-        """ Piece-wise constant schedule for p (the fraction of pixels changed on every iteration). """
-        it = int(it / n_iters * 10000)
-
-        if 10 < it <= 50:
-            p = p_init / 2
-        elif 50 < it <= 200:
-            p = p_init / 4
-        elif 200 < it <= 500:
-            p = p_init / 8
-        elif 500 < it <= 1000:
-            p = p_init / 16
-        elif 1000 < it <= 2000:
-            p = p_init / 32
-        elif 2000 < it <= 4000:
-            p = p_init / 64
-        elif 4000 < it <= 6000:
-            p = p_init / 128
-        elif 6000 < it <= 8000:
-            p = p_init / 256
-        elif 8000 < it <= 10000:
-            p = p_init / 512
-        else:
-            p = p_init
-
-        return 
-    
-    def generate(self, x: torch.Tensor, y: torch.Tensor, targeted: bool=False, p_init: float=0.1):
-
-        assert x.ndim == 3
-
-        min_val, max_val = -1, 1
-        n_features = x.shape[1] * x.shape[2]
-        n_ex_total = x.shape[0]
-        # x, y = x[corr_classified], y[corr_classified]
-
-        # init_delta = np.random.choice([-self.eps, self.eps], size=x.shape)
-        init_delta = (2 * torch.randint_like(x,1) - 1) * self.eps
-        x_best = (x + init_delta).clamp(min_val, max_val)
-        logits = self.model(x_best)
-
-        if not targeted:
-            loss_type = 'margin'
-        else:
-            loss_type = 'cross_entropy'
-        loss_min = self.loss(y, logits, targeted, loss_type).detach().cpu().numpy()
-        margin_min = self.loss(y, logits, targeted, 'margin').detach().cpu().numpy()
-        n_queries = np.ones(x.shape[0])  # ones because we have already used 1 query
-
-        time_start = time.time()
-        metrics = np.zeros([self.n_iter, 7])
-
-        for i_iter in range(self.n_iter - 1):
-            idx_to_fool = margin_min > 0
-            x_curr, x_best_curr, y_curr = x[idx_to_fool], x_best[idx_to_fool], y[idx_to_fool]
-            loss_min_curr, margin_min_curr = loss_min[idx_to_fool], margin_min[idx_to_fool]
-            delta = x_best_curr - x_curr
-
-            p = self.p_selection(p_init, i_iter, self.n_iter)
-
-            for i in range(x_best_curr.shape[0]):
-                s = int(round(np.sqrt(p * n_features)))
-                s = min(max(s, 1), x.shape[2]-1)  # at least 1 x 1 window is taken and at most 1 x length-1
-                center_l = np.random.randint(0, x.shape[2] - s)
-
-                x_curr_window = x_curr[i, :, center_l:center_l+s]
-                x_best_curr_window = x_best_curr[i, :, center_l:center_l+s]
-
-                # prevent trying out a delta if it doesn't change x_curr (e.g. an overlapping patch)
-                while torch.sum(torch.abs((x_curr_window + delta[i, :, center_l:center_l+s]).clamp(min_val, max_val) - x_best_curr_window) < 10**-7) == s:
-                    delta[i, :, center_l:center_l+s] = (2 * torch.randint(0,1,[1,1]) - 1) * self.eps
-            
-            x_new = (x_curr + delta).clamp(min_val, max_val)
-            logits = self.model(x_new)
-            loss = self.loss(y, logits, targeted, loss_type).detach().cpu().numpy()
-            margin = self.loss(y, logits, targeted, 'margin').detach().cpu().numpy()
-
-            idx_improved = loss < loss_min_curr
-            loss_min[idx_to_fool] = idx_improved * loss + ~idx_improved * loss_min_curr
-            margin_min[idx_to_fool] = idx_improved * margin + ~idx_improved * margin_min_curr
-
-            idx_improved =idx_improved.reshape([-1, *[1]*len(x.shape[:-1])])
-            x_best[idx_to_fool] = idx_improved * x_new + ~idx_improved * x_best_curr
-            n_queries[idx_to_fool] += 1
-
-            acc = (margin_min > 0.0).sum() / n_ex_total
-            acc_corr = (margin_min > 0.0).mean()
-            mean_nq, mean_nq_ae, median_nq_ae = np.mean(n_queries), np.mean(n_queries[margin_min <= 0]), np.median(n_queries[margin_min <= 0])
-            avg_margin_min = np.mean(margin_min)
-            time_total = time.time() - time_start
-            print('{}: acc={:.2%} acc_corr={:.2%} avg#q_ae={:.2f} med#q={:.1f}, avg_margin={:.2f} (n_ex={}, eps={:.3f}, {:.2f}s)'\
-                .format(i_iter+1, acc, acc_corr, mean_nq_ae, median_nq_ae, avg_margin_min, x.shape[0], self.eps, time_total))
-            
-            metrics[i_iter] = [acc, acc_corr, mean_nq, mean_nq_ae, median_nq_ae, margin_min.mean(), time_total]
-            # if (i_iter <= 500 and i_iter % 20 == 0) or (i_iter > 100 and i_iter % 50 == 0) or i_iter + 1 == self.n_iter or acc == 0:
-            #     np.save(metrics_path, metrics)
-            # if acc == 0:
-            #     break
-
-        return n_queries, x_best
 
 from utils import MarginalLoss
 class LinfSPSA():

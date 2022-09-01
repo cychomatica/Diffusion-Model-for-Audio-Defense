@@ -1,0 +1,16 @@
+use_gpu True
+gpu id: 0
+model_config: configs/config.json
+t: 25, rand_t: False, t_delta: 15
+use_bm: False
+  0%|          | 0/104 [00:00<?, ?audios/s]Adversarial attack stage 1 for x_2 was not successful
+Adversarial attack stage 1 for x_4 was not successful
+Adversarial attack stage 1 for x_5 was not successful
+  0%|          | 0/104 [4:57:20<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =62.5000%, CW robust acc: =37.5000%, ImpAtk success rate: =0.0000%]  8%|▊         | 8/104 [4:57:20<59:28:05, 2230.06s/audios, orig clean acc: =100.0000%, denoised clean acc: =62.5000%, CW robust acc: =37.5000%, ImpAtk success rate: =0.0000%]Adversarial attack stage 1 for x_0 was not successful
+Adversarial attack stage 1 for x_4 was not successful
+Adversarial attack stage 1 for x_6 was not successful
+ 15%|█▌        | 16/104 [9:54:41<54:30:45, 2230.06s/audios, orig clean acc: =100.0000%, denoised clean acc: =75.0000%, CW robust acc: =37.5000%, ImpAtk success rate: =0.0000%] 23%|██▎       | 24/104 [9:54:41<31:12:10, 1404.13s/audios, orig clean acc: =100.0000%, denoised clean acc: =75.0000%, CW robust acc: =37.5000%, ImpAtk success rate: =0.0000%]Adversarial attack stage 1 for x_3 was not successful
+ 31%|███       | 32/104 [14:52:17<28:04:57, 1404.13s/audios, orig clean acc: =100.0000%, denoised clean acc: =75.0000%, CW robust acc: =29.1667%, ImpAtk success rate: =0.0000%] 38%|███▊      | 40/104 [14:52:17<22:19:42, 1255.98s/audios, orig clean acc: =100.0000%, denoised clean acc: =75.0000%, CW robust acc: =29.1667%, ImpAtk success rate: =0.0000%]Adversarial attack stage 1 for x_6 was not successful
+ 38%|███▊      | 40/104 [19:50:03<22:19:42, 1255.98s/audios, orig clean acc: =96.8750%, denoised clean acc: =68.7500%, CW robust acc: =25.0000%, ImpAtk success rate: =0.0000%]  46%|████▌     | 48/104 [19:50:03<23:37:14, 1518.48s/audios, orig clean acc: =96.8750%, denoised clean acc: =68.7500%, CW robust acc: =25.0000%, ImpAtk success rate: =0.0000%]Adversarial attack stage 1 for x_0 was not successful
+Adversarial attack stage 1 for x_3 was not successful
+ 54%|█████▍    | 56/104 [24:47:49<20:14:47, 1518.48s/audios, orig clean acc: =97.5000%, denoised clean acc: =67.5000%, CW robust acc: =25.0000%, ImpAtk success rate: =0.0000%] 62%|██████▏   | 64/104 [24:47:49<14:56:00, 1344.01s/audios, orig clean acc: =97.5000%, denoised clean acc: =67.5000%, CW robust acc: =25.0000%, ImpAtk success rate: =0.0000%]

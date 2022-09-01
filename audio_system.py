@@ -2,7 +2,7 @@ import torch
 
 class AudioSystem(torch.nn.Module):
 
-    def __init__(self, classifier, transform, defender):
+    def __init__(self, classifier: torch.nn.Module, transform, defender: torch.nn.Module=None):
 
         super().__init__()
 
@@ -18,8 +18,11 @@ class AudioSystem(torch.nn.Module):
         self.defender = defender
     
     def forward(self, x):
-
-        output = self.defender(x)
+        
+        if self.defender is not None:
+            output = self.defender(x)
+        else: 
+            output = x
         output = self.transform(output)
         output = self.classifier(output)
 
