@@ -1,0 +1,30 @@
+use_gpu True
+gpu id: 2
+classifier model: CifarResNeXt
+classifier type: vanilla
+defense: DiffWave with t=25
+attack: CW with linf_eps=65 & iter=100
+
+  0%|          | 0.00/100 [00:00<?, ?audios/s]  0%|          | 0.00/100 [00:51<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =0.0000%, CW robust acc: =0.0000%, ImpAtk success rate: =0.0000%]  1%|          | 1.00/100 [00:51<1:24:56, 51.5s/audios, orig clean acc: =100.0000%, denoised clean acc: =0.0000%, CW robust acc: =0.0000%, ImpAtk success rate: =0.0000%]  1%|          | 1.00/100 [00:51<1:25:18, 51.7s/audios, orig clean acc: =100.0000%, denoised clean acc: =0.0000%, CW robust acc: =0.0000%, ImpAtk success rate: =0.0000%]
+Traceback (most recent call last):
+  File "/home/shutong/project/Diffusion_Model_for_Audio_Defense_Release/adaptive_attack_eval.py", line 200, in <module>
+    waveforms_defended = Defender(waveforms)
+  File "/home/shutong/anaconda3/envs/shutong/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/shutong/project/Diffusion_Model_for_Audio_Defense_Release/diffusion_models/diffwave_ddpm.py", line 42, in forward
+    output = self.fast_reverse(output)
+  File "/home/shutong/project/Diffusion_Model_for_Audio_Defense_Release/diffusion_models/diffwave_ddpm.py", line 129, in fast_reverse
+    eps_St = self.model((x_St, real_t * torch.ones((x_St.shape[0], 1)).cuda()))
+  File "/home/shutong/anaconda3/envs/shutong/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/shutong/project/Diffusion_Model_for_Audio_Defense_Release/diffusion_models/DiffWave_Unconditional/WaveNet.py", line 169, in forward
+    x = self.residual_layer((x, diffusion_steps))
+  File "/home/shutong/anaconda3/envs/shutong/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/shutong/project/Diffusion_Model_for_Audio_Defense_Release/diffusion_models/DiffWave_Unconditional/WaveNet.py", line 132, in forward
+    h, skip_n = self.residual_blocks[n]((h, diffusion_step_embed))  # use the output from last residual layer
+  File "/home/shutong/anaconda3/envs/shutong/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/shutong/project/Diffusion_Model_for_Audio_Defense_Release/diffusion_models/DiffWave_Unconditional/WaveNet.py", line 97, in forward
+    return (x + res) * math.sqrt(0.5), skip  # normalize for training stability
+RuntimeError: CUDA out of memory. Tried to allocate 16.00 MiB (GPU 0; 23.70 GiB total capacity; 21.79 GiB already allocated; 4.06 MiB free; 21.80 GiB reserved in total by PyTorch) If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF

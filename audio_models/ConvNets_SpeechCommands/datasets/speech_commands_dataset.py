@@ -34,7 +34,7 @@ class SpeechCommandsDataset(Dataset):
         # for c in classes[2:]:
         #    assert c in all_classes
         
-        for c in classes[:-2]:
+        for c in classes:
            assert c in all_classes
 
         class_to_idx = {classes[i]: i for i in range(len(classes))}

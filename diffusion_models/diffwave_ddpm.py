@@ -1,5 +1,6 @@
 import argparse
 import json
+from re import X
 
 import torch
 from .DiffWave_Unconditional.dataset import load_Speech_commands
@@ -36,7 +37,9 @@ class DiffWave(torch.nn.Module):
         
         # with torch.no_grad():
         output = self.diffusion(waveforms)
-        output = self.reverse(output)
+            # output = self.reverse(output)
+        output = self.one_shot_denoise(output)
+        # output = self.fast_reverse(output)
 
         return output
 
@@ -56,9 +59,9 @@ class DiffWave(torch.nn.Module):
         assert x_0.ndim == 3
 
         '''noising'''
-        with torch.no_grad():
-            z = torch.normal(0, 1, size=x_0.shape).cuda()
-            x_t = torch.sqrt(Alpha_bar[self.reverse_timestep-1]).cuda() * x_0 + torch.sqrt(1-Alpha_bar[self.reverse_timestep-1]).cuda() * z
+        # with torch.no_grad():
+        z = torch.normal(0, 1, size=x_0.shape).cuda()
+        x_t = torch.sqrt(Alpha_bar[self.reverse_timestep-1]).cuda() * x_0 + torch.sqrt(1-Alpha_bar[self.reverse_timestep-1]).cuda() * z
 
         return x_t
 
@@ -93,7 +96,43 @@ class DiffWave(torch.nn.Module):
 
         return x_t_rev
     
-    
+    def fast_reverse(self, x_t: Union[torch.Tensor, np.ndarray]) -> torch.Tensor: 
+
+        '''convert np.array to torch.tensor'''
+        if isinstance(type(x_t), np.ndarray): 
+            x_t = torch.from_numpy(x_t)
+
+        T, Alpha, Alpha_bar, Sigma = self.diffusion_hyperparams["T"], \
+                                    self.diffusion_hyperparams["Alpha"], \
+                                    self.diffusion_hyperparams["Alpha_bar"], \
+                                    self.diffusion_hyperparams["Sigma"]
+
+        K = 3
+        S = torch.linspace(1, self.reverse_timestep, K)
+        S = torch.round(S).int() - 1
+        Beta_new, Beta_tilde_new = torch.zeros(size=(K,)), torch.zeros(size=(K,))
+
+        for i in range(K):
+            if i > 0:
+                Beta_new[i] =  1 - Alpha_bar[S[i]] / Alpha_bar[S[i-1]]
+                Beta_tilde_new[i] = (1 - Alpha_bar[S[i-1]]) / (1 - Alpha_bar[S[i]]) * Beta_new[i]
+            else:
+                Beta_new[i] =  1 - Alpha_bar[S[i]]
+                Beta_tilde_new[i] = 0
+        Alpha_new = 1 - Beta_new
+        Alpha_bar_new = torch.cumprod(Alpha_new, dim=0)
+
+        x_St = x_t
+        for t in range(K-1, -1, -1):
+
+            real_t = S[t]
+            eps_St = self.model((x_St, real_t * torch.ones((x_St.shape[0], 1)).cuda()))
+            mu_St = (x_St - (1 - Alpha_new[t]) / torch.sqrt(1 - Alpha_bar_new[t]) * eps_St) / torch.sqrt(Alpha_new[t])
+            sigma_St = Beta_tilde_new[t]
+            x_St = mu_St + sigma_St * torch.normal(0, 1, size=x_St.shape).cuda()
+
+        return x_St
+
     def compute_coefficients(self, x_t: Union[torch.Tensor, np.ndarray], t: int):
 
         '''
@@ -112,9 +151,12 @@ class DiffWave(torch.nn.Module):
         epsilon_theta = self.model((x_t, diffusion_steps))
         mu_theta = (x_t - (1 - Alpha[t]) / torch.sqrt(1 - Alpha_bar[t]) * epsilon_theta) / torch.sqrt(Alpha[t])
         sigma_theta = Sigma[t]
+
+        # sigma_theta = self.diffusion_hyperparams["Beta"][t].sqrt()
         
         return epsilon_theta, mu_theta, sigma_theta
 
+    @torch.no_grad()
     def compute_eps_t(self, x_t: Union[torch.Tensor, np.ndarray], t):
 
         diffusion_steps = t * torch.ones((x_t.shape[0], 1)).cuda()
@@ -199,7 +241,104 @@ class DiffWave(torch.nn.Module):
             res = res[..., None]
         return res.expand(broadcast_shape)
     
+class ReffWave(torch.nn.Module):
 
+    def __init__(self, 
+                model: WaveNet_Speech_Commands, 
+                diffusion_hyperparams: dict,
+                reverse_timestep: int=200, 
+                num_re: int=5
+                ):
+        super().__init__()
+
+        '''
+            model: input (x_t, t), output epsilon_theta at timestep t
+        '''
+
+        self.model = model
+        self.diffusion_hyperparams = diffusion_hyperparams
+        self.reverse_timestep = reverse_timestep
+        self.freeze = False
+        self.num_re = num_re
+
+    def forward(self, waveforms: Union[torch.Tensor, np.ndarray]):
+
+        if isinstance(type(waveforms), np.ndarray): 
+            waveforms = torch.from_numpy(waveforms)
+
+        output = waveforms
+        # with torch.no_grad():
+        for i in range(self.num_re):
+            output = self.diffusion(output)
+            output = self.one_shot_denoise(output)
+
+        return output
+
+    def diffusion(self, x_0: Union[torch.Tensor, np.ndarray]) -> torch.Tensor: 
+        
+        '''convert np.array to torch.tensor'''
+        if isinstance(type(x_0), np.ndarray): 
+            x_0 = torch.from_numpy(x_0)
+
+        T, Alpha, Alpha_bar, Sigma = self.diffusion_hyperparams["T"], \
+                                    self.diffusion_hyperparams["Alpha"], \
+                                    self.diffusion_hyperparams["Alpha_bar"], \
+                                    self.diffusion_hyperparams["Sigma"] 
+        assert len(Alpha) == T
+        assert len(Alpha_bar) == T
+        assert len(Sigma) == T
+        assert x_0.ndim == 3
+
+        '''noising'''
+        z = torch.normal(0, 1, size=x_0.shape).cuda()
+        x_t = torch.sqrt(Alpha_bar[self.reverse_timestep-1]).cuda() * x_0 + torch.sqrt(1-Alpha_bar[self.reverse_timestep-1]).cuda() * z
+
+        return x_t
+
+    def one_shot_denoise(self, x_t: Union[torch.Tensor, np.ndarray]):
+
+        t = self.reverse_timestep - 1
+        diffusion_steps = t * torch.ones((x_t.shape[0], 1)).cuda()
+        epsilon_theta = self.model((x_t, diffusion_steps))
+
+        pred_x_0 = self._predict_x0_from_eps(x_t, t, epsilon_theta)
+
+        return pred_x_0
+
+    def _predict_x0_from_eps(self, x_t, t, eps):
+
+        assert x_t.shape == eps.shape
+
+        Alpha_bar = self.diffusion_hyperparams["Alpha_bar"]
+
+        sqrt_recip_alphas_bar = (1 / Alpha_bar).sqrt()
+        sqrt_recipm1_alphas_bar = (1 / Alpha_bar - 1).sqrt()
+        pred_x_0 = self._extract_into_tensor(sqrt_recip_alphas_bar, t, x_t.shape) * x_t - self._extract_into_tensor(sqrt_recipm1_alphas_bar, t, x_t.shape) * eps
+
+        return pred_x_0
+
+    def _extract_into_tensor(self, arr_or_func, timesteps, broadcast_shape):
+        """
+        Extract values from a 1-D numpy array for a batch of indices.
+        :param arr: the 1-D numpy array or a func.
+        :param timesteps: a tensor of indices into the array to extract.
+        :param broadcast_shape: a larger shape of K dimensions with the batch
+                                dimension equal to the length of timesteps.
+        :return: a tensor of shape [batch_size, 1, ...] where the shape has K dims.
+        """
+        if callable(arr_or_func):
+            res = arr_or_func(timesteps).float()
+        else:
+            if isinstance(arr_or_func, torch.Tensor):
+                res = arr_or_func.cuda()[timesteps].float()
+            elif isinstance(arr_or_func, np.ndarray):
+                res = torch.from_numpy(arr_or_func).cuda()[timesteps].float()
+            else:
+                raise TypeError('Unsupported data type {} in arr_or_func'.format(type(arr_or_func)))
+        
+        while len(res.shape) < len(broadcast_shape):
+            res = res[..., None]
+        return res.expand(broadcast_shape)
     # not used yet
     # region
     # def fast_denoise(self, waveforms: Union[torch.Tensor, np.ndarray]) -> torch.Tensor:

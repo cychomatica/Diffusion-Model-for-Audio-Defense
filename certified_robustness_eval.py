@@ -10,6 +10,8 @@ import torchaudio
 import numpy as np
 import matplotlib.pyplot as plt
 
+import json
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -46,14 +48,15 @@ if __name__ == '__main__':
     print('use_gpu', use_gpu)
     print('gpu id: {}'.format(args.gpu))
 
-
     '''SC09 classifier setting'''
     #region
     from transforms import *
     from datasets.sc_dataset import *
     from audio_models.ConvNets_SpeechCommands.create_model import *
 
-    Classifier = create_model(args.victim_path)
+    model_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/gaussian_aug_resnext29_8_64_sgd_plateau_bs50_lr1.0e-02_wd1.0e-02/sigma={}-best-acc.pth'.format(args.sigma)
+
+    Classifier = create_model(model_path)
     if use_gpu:
         torch.backends.cudnn.benchmark = True
         Classifier.cuda()
@@ -98,16 +101,18 @@ if __name__ == '__main__':
 
     total = 0
 
-    radius_array = np.arange(0,4.05,0.05)
-    certified_correct_counts = np.zeros_like(radius_array, dtype=float)
-    certified_accuracy_array = np.zeros_like(radius_array, dtype=float)
+    # radius_array = np.arange(0,4.05,0.05)
+    # certified_correct_counts = np.zeros_like(radius_array, dtype=float)
+    # certified_accuracy_array = np.zeros_like(radius_array, dtype=float)
+
+    record_save = []
 
     for batch in pbar:
         
         waveforms = batch['samples']
         waveforms = torch.unsqueeze(waveforms, 1)
         targets = batch['target']
-        total += waveforms.shape[0]
+        
 
         waveforms = waveforms.cuda()
         targets = targets.cuda()
@@ -118,33 +123,45 @@ if __name__ == '__main__':
                                             sigma=args.sigma, n_0=100, n=args.num_sampling, 
                                             batch_size=args.batch_size)
 
-        for i in range(len(certified_correct_counts)):
-            eps = radius_array[i]
-            certified_correct_counts[i] += RC.certified_robust_correct(y_pred=y_certified, y_target=targets, 
-                                                            r_c=r_certified, r=eps)
-        certified_accuracy_array = certified_correct_counts / total * 100
+        for i in range(waveforms.shape[0]):
+            save_dict = {'id': i+total, 
+                         'y_true': targets[i].item(), 
+                         'y_pred': y_certified[i].item(), 
+                         'certified_radius': r_certified[i].item()}
+            record_save.append(save_dict)
 
-        if not os.path.exists(args.save_path):
-            os.makedirs(args.save_path)
+        total += waveforms.shape[0]
+        # for i in range(len(certified_correct_counts)):
+        #     eps = radius_array[i]
+        #     certified_correct_counts[i] += RC.certified_robust_correct(y_pred=y_certified, y_target=targets, 
+        #                                                     r_c=r_certified, r=eps)
+        # certified_accuracy_array = certified_correct_counts / total * 100
 
-        plt.figure(dpi=1000)
-        plt.plot(radius_array, certified_accuracy_array)
-        plt.xlabel('radius')
-        plt.ylabel('certified accuracy')
-        plt.savefig(os.path.join(args.save_path, 'num_examples={}_N={}_sigma={}_defense={}.png'.format(len(test_dataset),args.num_sampling,args.sigma,args.defense_method)))
-        np.save(os.path.join(args.save_path, 'num_examples={}_N={}_sigma={}_defense={}.npy'.format(len(test_dataset),args.num_sampling,args.sigma,args.defense_method)),certified_accuracy_array)
+        save_path = os.path.join(args.save_path, 'sigma={}'.format(args.sigma))
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
 
-        '''output keypoints'''
-        info = {}
-        for i in [0, 10, 20, 30, 40, 50, 60, 70, 80]:
-            info.update({'certified robust acc with eps={}: '.format(radius_array[i]): '{:.4f}%'.format(certified_accuracy_array[i])})
+        f = open(os.path.join(save_path, 'sigma={}_N={}.json'.format(args.sigma, args.num_sampling)), 'w')
+        json.dump(record_save, f, indent=4)
+        f.close()
+        # plt.figure(dpi=1000)
+        # plt.plot(radius_array, certified_accuracy_array)
+        # plt.xlabel('radius')
+        # plt.ylabel('certified accuracy')
+        # plt.savefig(os.path.join(save_path, 'num_examples={}_N={}_sigma={}_defense={}.png'.format(len(test_dataset),args.num_sampling,args.sigma,args.defense_method)))
+        # np.save(os.path.join(save_path, 'num_examples={}_N={}_sigma={}_defense={}.npy'.format(len(test_dataset),args.num_sampling,args.sigma,args.defense_method)),certified_accuracy_array)
 
-        pbar.set_postfix(info)
-        pbar.update(1)
+        # '''output keypoints'''
+        # info = {}
+        # for i in [0, 10, 20, 30, 40, 50, 60, 70, 80]:
+        #     info.update({'certified robust acc with eps={}: '.format(radius_array[i]): '{:.4f}%'.format(certified_accuracy_array[i])})
 
-    '''summary'''
-    print('on {} test examples: '.format(total))
-    print('certified robust test accuracy: ')
-    for i in [0, 10, 20, 30, 40, 50, 60, 70, 80]:
-        print('eps={}: {:.4f}'.format(radius_array[i], certified_accuracy_array[i]))
+        # pbar.set_postfix(info)
+        # pbar.update(1)
+
+    # '''summary'''
+    # print('on {} test examples: '.format(total))
+    # print('certified robust test accuracy: ')
+    # for i in [0, 10, 20, 30, 40, 50, 60, 70, 80]:
+    #     print('eps={}: {:.4f}'.format(radius_array[i], certified_accuracy_array[i]))
 

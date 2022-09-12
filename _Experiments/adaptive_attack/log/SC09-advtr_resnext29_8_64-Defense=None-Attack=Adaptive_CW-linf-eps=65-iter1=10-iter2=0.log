@@ -1,0 +1,58 @@
+use_gpu True
+gpu id: 0
+classifier model: CifarResNeXt
+classifier type: advtr
+defense: None
+attack: CW with linf_eps=65 & iter=10
+
+  0%|          | 0/100 [00:00<?, ?audios/s]Adversarial attack stage 1 for x_0 was not successful
+Adversarial attack stage 1 for x_1 was not successful
+Adversarial attack stage 1 for x_2 was not successful
+Adversarial attack stage 1 for x_3 was not successful
+Adversarial attack stage 1 for x_4 was not successful
+Adversarial attack stage 1 for x_5 was not successful
+Adversarial attack stage 1 for x_8 was not successful
+Adversarial attack stage 1 for x_9 was not successful
+Adversarial attack stage 1 for x_11 was not successful
+Adversarial attack stage 1 for x_12 was not successful
+Adversarial attack stage 1 for x_14 was not successful
+Adversarial attack stage 1 for x_17 was not successful
+Adversarial attack stage 1 for x_18 was not successful
+Adversarial attack stage 1 for x_19 was not successful
+Adversarial attack stage 1 for x_22 was not successful
+Adversarial attack stage 1 for x_24 was not successful
+Adversarial attack stage 1 for x_28 was not successful
+Adversarial attack stage 1 for x_30 was not successful
+Adversarial attack stage 1 for x_32 was not successful
+Adversarial attack stage 1 for x_33 was not successful
+Adversarial attack stage 1 for x_34 was not successful
+Adversarial attack stage 1 for x_35 was not successful
+Adversarial attack stage 1 for x_36 was not successful
+Adversarial attack stage 1 for x_43 was not successful
+Adversarial attack stage 1 for x_44 was not successful
+Adversarial attack stage 1 for x_45 was not successful
+Adversarial attack stage 1 for x_46 was not successful
+Adversarial attack stage 1 for x_47 was not successful
+  0%|          | 0/100 [00:03<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =56.0000%, ImpAtk success rate: =0.0000%] 50%|█████     | 50/100 [00:03<00:03, 13.48audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =56.0000%, ImpAtk success rate: =0.0000%]Adversarial attack stage 1 for x_1 was not successful
+Adversarial attack stage 1 for x_3 was not successful
+Adversarial attack stage 1 for x_5 was not successful
+Adversarial attack stage 1 for x_11 was not successful
+Adversarial attack stage 1 for x_12 was not successful
+Adversarial attack stage 1 for x_13 was not successful
+Adversarial attack stage 1 for x_15 was not successful
+Adversarial attack stage 1 for x_21 was not successful
+Adversarial attack stage 1 for x_23 was not successful
+Adversarial attack stage 1 for x_24 was not successful
+Adversarial attack stage 1 for x_25 was not successful
+Adversarial attack stage 1 for x_28 was not successful
+Adversarial attack stage 1 for x_31 was not successful
+Adversarial attack stage 1 for x_36 was not successful
+Adversarial attack stage 1 for x_42 was not successful
+Adversarial attack stage 1 for x_43 was not successful
+Adversarial attack stage 1 for x_45 was not successful
+100%|██████████| 100/100 [00:04<00:00, 13.48audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =45.0000%, ImpAtk success rate: =0.0000%]150audios [00:04, 35.05audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =45.0000%, ImpAtk success rate: =0.0000%]                     100%|██████████| 100/100 [00:05<00:00, 19.85audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =45.0000%, ImpAtk success rate: =0.0000%]
+on 100 test examples: 
+original clean test accuracy: 100.0000%
+denoised clean test accuracy: 100.0000%
+CW robust test accuracy: 45.0000%
+Imperceptible attack success rate: 0.0000%

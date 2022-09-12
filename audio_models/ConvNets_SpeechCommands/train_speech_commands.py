@@ -4,6 +4,10 @@
 __author__ = 'Yuan Xu, Erdene-Ochir Tuguldur'
 
 
+import sys
+
+sys.path.insert(0, './audio_models/ConvNets_SpeechCommands')
+
 import os
 # os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 
@@ -23,7 +27,7 @@ from torchvision.transforms import *
 # from tensorboardX import SummaryWriter
 
 import models
-from .datasets import *
+from datasets import *
 from transforms import *
 from mixup import *
 
@@ -46,7 +50,7 @@ parser.add_argument("--resume", type=str, help='checkpoint file to resume')
 parser.add_argument("--model", choices=models.available_models, default=models.available_models[9], help='model of NN')
 parser.add_argument("--input", choices=['mel32'], default='mel32', help='input of NN')
 parser.add_argument('--mixup', action='store_true', help='use mixup')
-parser.add_argument('--gpu_id', type=int, default=2)
+parser.add_argument('--gpu_id', type=int, default=3)
 args = parser.parse_args()
 
 os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
@@ -258,19 +262,20 @@ def valid(epoch):
         'optimizer' : optimizer.state_dict(),
     }
 
-    if not os.path.exists('checkpoints'):
-        os.makedirs('checkpoints')
+    save_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/{}'.format(full_name)
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
 
     if accuracy > best_accuracy:
         best_accuracy = accuracy
-        torch.save(checkpoint, 'checkpoints/best-loss-speech-commands-checkpoint-%s.pth' % full_name)
-        torch.save(model, 'checkpoints/%d-%s-best-loss.pth' % (start_timestamp, full_name))
+        torch.save(checkpoint, os.path.join(save_path, 'best-loss-speech-commands-checkpoint.pth'))
+        torch.save(model, os.path.join(save_path, '{}-best-loss.pth'.format(start_timestamp)))
     if epoch_loss < best_loss:
         best_loss = epoch_loss
-        torch.save(checkpoint, 'checkpoints/best-acc-speech-commands-checkpoint-%s.pth' % full_name)
-        torch.save(model, 'checkpoints/%d-%s-best-acc.pth' % (start_timestamp, full_name))
+        torch.save(checkpoint, os.path.join(save_path, 'best-acc-speech-commands-checkpoint.pth'))
+        torch.save(model, os.path.join(save_path, '{}-best-acc.pth'.format(start_timestamp)))
 
-    torch.save(checkpoint, 'checkpoints/last-speech-commands-checkpoint.pth')
+    torch.save(checkpoint, os.path.join(save_path, 'last-speech-commands-checkpoint.pth'))
     del checkpoint  # reduce memory
 
     return epoch_loss

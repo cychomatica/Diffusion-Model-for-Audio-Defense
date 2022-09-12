@@ -1,3 +1,4 @@
+from ast import arg
 import os
 import argparse
 
@@ -7,13 +8,17 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import *
 import torchaudio
 
+from diffusion_models.diffwave_ddpm import DiffWave
+from robustness_eval.black_box_attack import FAKEBOB, Kenansville, SirenAttack
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     '''SC09 classifier arguments'''
     parser.add_argument("--data_path", default='datasets/speech_commands/test')
-    parser.add_argument("--victim_path", default='audio_models/ConvNets_SpeechCommands/checkpoints/sc09-resnext29_8_64_sgd_plateau_bs96_lr1.0e-02_wd1.0e-02-best-acc.pth')
+    parser.add_argument("--classifier_model", type=str, choices=['resnext29_8_64', 'vgg19_bn', 'densenet_bc_100_12', 'wideresnet28_10'], default='resnext29_8_64')
+    parser.add_argument("--classifier_type", type=str, choices=['advtr', 'vanilla'], default='vanilla')
     parser.add_argument("--classifier_input", choices=['mel32'], default='mel32', help='input of NN')
     parser.add_argument("--num_per_class", type=int, default=10)
 
@@ -29,11 +34,14 @@ if __name__ == '__main__':
     parser.add_argument('--use_bm', action='store_true', default=False, help='whether to use brownian motion')
 
     '''attack arguments'''
-    parser.add_argument('--attack', type=str, choices=['CW', 'Qin-I', 'SPSA'], default='CW')
+    parser.add_argument('--attack', type=str, choices=['CW', 'Qin-I', 'Kenansville', 'FAKEBOB', 'SirenAttack'], default='CW')
+    parser.add_argument('--defense', type=str, choices=['Diffusion', 'AS', 'MS', 'DS', 'LPF', 'BPF', 'FeCo', 'None'], default='Diffusion')
     parser.add_argument('--bound_norm', type=str, choices=['linf', 'l2'], default='l2')
-    parser.add_argument('--eps', type=int, default=2000)
-    parser.add_argument('--max_iter_1', type=int, default=10)
-    parser.add_argument('--max_iter_2', type=int, default=10)
+    parser.add_argument('--eps', type=int, default=65)
+    parser.add_argument('--max_iter_1', type=int, default=100)
+    parser.add_argument('--max_iter_2', type=int, default=0)
+    parser.add_argument('--eot_attack_size', type=int, default=100)
+    parser.add_argument('--eot_defense_size', type=int, default=1)
 
     '''device arguments'''
     parser.add_argument("--dataload_workers_nums", type=int, default=8, help='number of workers for dataloader')
@@ -41,7 +49,7 @@ if __name__ == '__main__':
     parser.add_argument('--gpu', type=int, default=1)
 
     '''file saving arguments'''
-    parser.add_argument('--save_path', default='_Experiments/adaptive_attack/vpsde_adaptive_Qin-I_untargeted')
+    parser.add_argument('--save_path', default=None)
 
     args = parser.parse_args()
 
@@ -54,27 +62,37 @@ if __name__ == '__main__':
 
 
     '''set audio system model'''
-    # SC09 classifier setting
+    '''SC09 classifier setting'''
     from transforms import *
     from datasets.sc_dataset import *
     from audio_models.ConvNets_SpeechCommands.create_model import *
-    Classifier = create_model(args.victim_path)
+
+    if args.classifier_model == 'resnext29_8_64':
+        classifier_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/resnext29_8_64_sgd_plateau_bs64_lr1.0e-02_wd1.0e-02'
+    elif args.classifier_model == 'vgg19_bn':
+        classifier_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/vgg19_bn_sgd_plateau_bs96_lr1.0e-02_wd1.0e-02'
+    elif args.classifier_model == 'densenet_bc_100_12':
+        classifier_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/densenet_bc_100_12_sgd_plateau_bs96_lr1.0e-02_wd1.0e-02'
+    elif args.classifier_model == 'wideresnet28_10':
+        classifier_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/wideresnet28_10_sgd_plateau_bs96_lr1.0e-02_wd1.0e-02'
+    
+    if args.classifier_type == 'vanilla': 
+        classifier_path = os.path.join(classifier_path, 'vanilla-best-acc.pth')
+    elif args.classifier_type == 'advtr': 
+        classifier_path = os.path.join(classifier_path, 'advtr-best-acc.pth')
+
+    Classifier = create_model(classifier_path)
     if use_gpu:
         torch.backends.cudnn.benchmark = True
         Classifier.cuda()
-    # feature_transform = Compose([ToMelSpectrogram(n_mels=n_mels), ToTensor('mel_spectrogram', 'input')])
-    # transform = Compose([LoadAudio(), FixAudioLength(), feature_transform])
+
     transform = Compose([LoadAudio(), FixAudioLength()])
     test_dataset = SC09Dataset(folder=args.data_path, transform=transform, num_per_class=args.num_per_class)
     test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, sampler=None, shuffle=False, 
                                 pin_memory=use_gpu, num_workers=args.dataload_workers_nums)
     criterion = torch.nn.CrossEntropyLoss()
 
-    # DiffWave denoiser setting
-    from diffusion_models.diffwave_sde import RevGuidedDiffusion
-    DiffWave_VPSDE = RevGuidedDiffusion(args=args)
-
-    # preprocessing setting
+    '''preprocessing setting'''
     n_mels = 32
     if args.classifier_input == 'mel40':
         n_mels = 40
@@ -82,25 +100,85 @@ if __name__ == '__main__':
     Amp2DB = torchaudio.transforms.AmplitudeToDB(stype='power')
     Wave2Spect = Compose([MelSpecTrans.cuda(), Amp2DB.cuda()])
 
+
+    '''defense setting'''
     from audio_system import AudioSystem
-    AS_MODEL = AudioSystem(classifier=Classifier, transform=Wave2Spect, defender=DiffWave_VPSDE)
+    if args.defense == 'None':
+        AS_MODEL = AudioSystem(classifier=Classifier, transform=Wave2Spect, defender=None)
+        print('classifier model: {}'.format(Classifier._get_name()))
+        print('classifier type: {}'.format(args.classifier_type))
+        print('defense: None')
+    else:
+        if args.defense == 'Diffusion':
+            # from diffusion_models.diffwave_ddpm import *
+            # Defender = create_diffwave_model(args.ddpm_path, args.ddpm_config, args.t)
+            from diffusion_models.diffwave_sde import *
+            Defender = RevGuidedDiffusion(args)
+        elif args.defense == 'AS': 
+            from transforms.time_defense import *
+            Defender = TimeDomainDefense(defense_type='AS')
+        elif args.defense == 'MS': 
+            from transforms.time_defense import *
+            Defender = TimeDomainDefense(defense_type='MS')
+        elif args.defense == 'DS': 
+            from transforms.frequency_defense import *
+            Defender = FreqDomainDefense(defense_type='DS')
+        elif args.defense == 'LPF': 
+            from transforms.frequency_defense import *
+            Defender = FreqDomainDefense(defense_type='LPF')
+        elif args.defense == 'BPF': 
+            from transforms.frequency_defense import *
+            Defender = FreqDomainDefense(defense_type='BPF')
+        elif args.defense == 'FeCo':
+            from transforms.feature_defense import *
+            Defender = FeCo(param=0.2)
+        else:
+            raise NotImplementedError(f'Unknown defense type: {args.defense}!')
+        AS_MODEL = AudioSystem(classifier=Classifier, transform=Wave2Spect, defender=Defender)
+        print('classifier model: {}'.format(Classifier._get_name()))
+        print('classifier type: {}'.format(args.classifier_type))
+        if args.defense == 'Diffusion':
+            print('defense: {} with t={}'.format(Defender._get_name(), args.t))
+        else:
+            print('defense: {}'.format(Defender._get_name()))
 
 
     '''attack setting'''
-    from robustness_eval.attack import *
+    from robustness_eval.white_box_attack import *
     if args.attack == 'CW':
         Attacker = AudioAttack(model=AS_MODEL, 
                                 eps=args.eps, norm=args.bound_norm,
-                                max_iter_1=args.max_iter_1, max_iter_2=0)
+                                max_iter_1=args.max_iter_1, max_iter_2=0,
+                                learning_rate_1=args.eps/5, 
+                                eot_attack_size=args.eot_attack_size,
+                                eot_defense_size=args.eot_defense_size)
+        print('attack: {} with {}_eps={} & iter={} & eot={}-{}\n'.format(args.attack, args.bound_norm, args.eps, args.max_iter_1, args.eot_attack_size, args.eot_defense_size))
     elif args.attack == 'Qin-I':
         PsyMask = PsychoacousticMasker()
         Attacker = AudioAttack(model=AS_MODEL, masker=PsyMask, 
                                 eps=args.eps, norm=args.bound_norm,
-                                max_iter_1=args.max_iter_1, max_iter_2=args.max_iter_2)
-    elif args.attack == 'SPSA':
-        Attacker = LinfSPSA(model=Classifier, transform=Wave2Spect, defender=DiffWave_VPSDE)
+                                max_iter_1=args.max_iter_1, max_iter_2=args.max_iter_2,
+                                learning_rate_1=args.eps/5)
+    elif args.attack == 'Kenansville':
+        Attacker = Kenansville(model=AS_MODEL, atk_name='ssa', 
+                               max_iter=30, raster_width=100, verbose=1)
+        print('attack: {} with raster_width={} & iter={}\n'.format(args.attack, 100, 30))
+    elif args.attack == 'FAKEBOB':
+        eps = 0.002 #args.eps / (2**15)
+        Attacker = FAKEBOB(model=AS_MODEL, task='SCR', targeted=False, verbose=0,
+                           confidence=0.5, epsilon=eps, max_lr=5e-4, min_lr=1e-4,
+                           max_iter=200, samples_per_draw=50)
+        
+    elif args.attack == 'SirenAttack':
+        eps = 0.002 #args.eps / (2**15)
+        Attacker = SirenAttack(model=AS_MODEL, task='SCR', targeted=False, verbose=0,
+                               epsilon=eps, max_epoch=300, max_iter=30,
+                               n_particles=25)
+    # elif args.attack == 'SPSA':
+    #     Attacker = LinfSPSA(model=Classifier, transform=Wave2Spect, defender=DiffWave_VPSDE)
     else:
         raise AttributeError("this version does not support '{}' at present".format(args.attack))
+    # print('attack: {} with {}_eps={} & iter={} & eot={}\n'.format(args.attack, args.bound_norm, args.eps, args.max_iter_1, args.eot_size))
 
     
     '''robustness eval'''
@@ -111,7 +189,6 @@ if __name__ == '__main__':
     correct_orig_denoised = 0
     correct_adv_1 = 0
     success_adv_2 = 0
-    # correct_adv_denoised = 0
     total = 0
 
     for batch in pbar:
@@ -127,17 +204,25 @@ if __name__ == '__main__':
         y_orig = torch.squeeze(Classifier(Wave2Spect(waveforms)).max(1, keepdim=True)[1])
 
         '''denoised original audio'''
-        waveforms_denoised = DiffWave_VPSDE(waveforms)
-        y_orig_denoised = torch.squeeze(Classifier(Wave2Spect(waveforms_denoised)).max(1, keepdim=True)[1])
+        if args.defense == 'None':
+            waveforms_defended = waveforms
+        else:
+            waveforms_defended = Defender(waveforms)
+            # feature = Wave2Spect(torch.squeeze(waveforms,1))
+            # feature_defended = Defender(feature)
+        y_orig_denoised = torch.squeeze(Classifier(Wave2Spect(waveforms_defended)).max(1, keepdim=True)[1])
 
         '''adversarial audio'''
-        # waveforms_adv, attack_success = Attacker.generate(x=waveforms, y=(targets+1)%10, targeted=True)
         waveforms_adv, attack_success_1, attack_success_2 = Attacker.generate(x=waveforms, y=targets, targeted=False)
-        # y_adv = torch.squeeze(SC09_ResNeXt(Wave2Spect(waveforms_adv)).max(1, keepdim=True)[1])
+        # waveforms_adv, success = Attacker.generate(x=waveforms, y=targets)
+        # attack_success_1 = torch.tensor(success).sum().item()
+        # waveforms_adv = torch.tensor(waveforms_adv).to(waveforms.device)
 
         '''denoised adversarial audio'''
-        waveforms_adv_denoised = DiffWave_VPSDE(waveforms_adv)
-        # y_adv_denoised = torch.squeeze(SC09_ResNeXt(Wave2Spect(waveforms_adv_denoised)).max(1, keepdim=True)[1])
+        if args.defense == 'None':
+            waveforms_adv_defended = waveforms_adv
+        else:
+            waveforms_adv_defended = Defender(waveforms_adv)
 
         '''audio saving'''
         if args.save_path is not None:
@@ -161,18 +246,18 @@ if __name__ == '__main__':
                 torchaudio.save(os.path.join(clean_path,'{}_{}_clean.wav'.format(audio_id,targets[i].item())), 
                                 waveforms[i].cpu(), batch['sample_rate'][i])
                 torchaudio.save(os.path.join(clean_denoised_path,'{}_{}_clean_denoised.wav'.format(audio_id,targets[i].item())), 
-                                waveforms_denoised[i].cpu(), batch['sample_rate'][i])
+                                waveforms_defended[i].cpu(), batch['sample_rate'][i])
                 torchaudio.save(os.path.join(adv_path,'{}_{}_adv.wav'.format(audio_id,targets[i].item())), 
                                 waveforms_adv[i].cpu(), batch['sample_rate'][i])
                 torchaudio.save(os.path.join(adv_path,'{}_{}_adv_denoised.wav'.format(audio_id,targets[i].item())), 
-                                waveforms_adv_denoised[i].cpu(), batch['sample_rate'][i])
+                                waveforms_adv_defended[i].cpu(), batch['sample_rate'][i])
 
 
         '''metrics output'''
         correct_orig += (y_orig==targets).sum().item()
         correct_orig_denoised += (y_orig_denoised==targets).sum().item()
         correct_adv_1 += waveforms.shape[0] - attack_success_1
-        success_adv_2 += attack_success_2
+        success_adv_2 += 0 #attack_success_2
         total += waveforms.shape[0]
 
         acc_orig = correct_orig / total * 100
@@ -195,5 +280,5 @@ if __name__ == '__main__':
     print('original clean test accuracy: {:.4f}%'.format(acc_orig))
     print('denoised clean test accuracy: {:.4f}%'.format(acc_orig_denoised))
     print('CW robust test accuracy: {:.4f}%'.format(acc_adv_1))
-    print('Imperceptible attack success rate:: {:.4f}%'.format(sr_adv_2))
+    print('Imperceptible attack success rate: {:.4f}%'.format(sr_adv_2))
 

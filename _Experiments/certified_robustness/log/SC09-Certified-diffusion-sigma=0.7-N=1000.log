@@ -1,0 +1,3 @@
+use_gpu True
+gpu id: 2
+  0%|          | 0/100 [00:00<?, ?audios/s]

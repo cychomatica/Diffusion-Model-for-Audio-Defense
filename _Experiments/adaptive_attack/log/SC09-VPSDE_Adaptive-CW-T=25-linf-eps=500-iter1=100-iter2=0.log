@@ -1,10 +1,0 @@
-use_gpu True
-gpu id: 0
-model_config: configs/config.json
-t: 25, rand_t: False, t_delta: 15
-use_bm: False
-  0%|          | 0/104 [00:00<?, ?audios/s]Adversarial attack stage 1 for x_2 was not successful
-Adversarial attack stage 1 for x_5 was not successful
-  0%|          | 0/104 [4:57:59<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =62.5000%, CW robust acc: =25.0000%, ImpAtk success rate: =0.0000%]  8%|▊         | 8/104 [4:57:59<59:35:51, 2234.91s/audios, orig clean acc: =100.0000%, denoised clean acc: =62.5000%, CW robust acc: =25.0000%, ImpAtk success rate: =0.0000%]Adversarial attack stage 1 for x_4 was not successful
-Adversarial attack stage 1 for x_6 was not successful
- 15%|█▌        | 16/104 [9:56:07<54:37:52, 2234.91s/audios, orig clean acc: =100.0000%, denoised clean acc: =75.0000%, CW robust acc: =25.0000%, ImpAtk success rate: =0.0000%] 23%|██▎       | 24/104 [9:56:07<31:16:44, 1407.56s/audios, orig clean acc: =100.0000%, denoised clean acc: =75.0000%, CW robust acc: =25.0000%, ImpAtk success rate: =0.0000%]

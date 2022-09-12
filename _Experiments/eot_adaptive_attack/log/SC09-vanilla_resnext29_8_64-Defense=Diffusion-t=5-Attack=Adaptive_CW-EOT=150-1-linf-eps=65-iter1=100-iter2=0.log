@@ -1,0 +1,25 @@
+use_gpu True
+gpu id: 0
+model_config: configs/config.json
+t: 5, rand_t: False, t_delta: 15
+use_bm: False
+classifier model: CifarResNeXt
+classifier type: vanilla
+defense: RevGuidedDiffusion with t=5
+attack: CW with linf_eps=65 & iter=100 & eot=150-1
+
+  0%|          | 0/100 [00:00<?, ?audios/s]  0%|          | 0/100 [00:03<?, ?audios/s]
+Traceback (most recent call last):
+  File "/home/shutong/project/Diffusion_Model_for_Audio_Defense_Release/adaptive_attack_eval.py", line 204, in <module>
+    y_orig = torch.squeeze(Classifier(Wave2Spect(waveforms)).max(1, keepdim=True)[1])
+  File "/home/shutong/anaconda3/envs/shutong/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/shutong/project/Diffusion_Model_for_Audio_Defense_Release/./audio_models/ConvNets_SpeechCommands/models/resnext.py", line 137, in forward
+    x = self.stage_1.forward(x)
+  File "/home/shutong/anaconda3/envs/shutong/lib/python3.9/site-packages/torch/nn/modules/container.py", line 141, in forward
+    input = module(input)
+  File "/home/shutong/anaconda3/envs/shutong/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/shutong/project/Diffusion_Model_for_Audio_Defense_Release/./audio_models/ConvNets_SpeechCommands/models/resnext.py", line 64, in forward
+    return F.relu(residual + bottleneck, inplace=True)
+RuntimeError: CUDA out of memory. Tried to allocate 10.00 MiB (GPU 0; 23.70 GiB total capacity; 352.79 MiB already allocated; 11.06 MiB free; 370.00 MiB reserved in total by PyTorch) If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF

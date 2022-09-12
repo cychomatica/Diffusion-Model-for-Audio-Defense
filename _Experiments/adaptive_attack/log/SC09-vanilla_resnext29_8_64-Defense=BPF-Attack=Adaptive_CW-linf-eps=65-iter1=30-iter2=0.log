@@ -1,0 +1,23 @@
+use_gpu True
+gpu id: 0
+classifier model: CifarResNeXt
+classifier type: vanilla
+defense: Band_Pass_Filter
+attack: CW with linf_eps=65 & iter=30
+
+  0%|          | 0/100 [00:00<?, ?audios/s]Adversarial attack stage 1 for x_0 was not successful
+Adversarial attack stage 1 for x_1 was not successful
+Adversarial attack stage 1 for x_2 was not successful
+Adversarial attack stage 1 for x_3 was not successful
+Adversarial attack stage 1 for x_4 was not successful
+Adversarial attack stage 1 for x_5 was not successful
+Adversarial attack stage 1 for x_6 was not successful
+Adversarial attack stage 1 for x_7 was not successful
+Adversarial attack stage 1 for x_8 was not successful
+Adversarial attack stage 1 for x_9 was not successful
+  0%|          | 0/100 [00:13<?, ?audios/s, orig clean acc: =98.0000%, denoised clean acc: =20.0000%, CW robust acc: =20.0000%, ImpAtk success rate: =0.0000%] 50%|█████     | 50/100 [00:13<00:13,  3.67audios/s, orig clean acc: =98.0000%, denoised clean acc: =20.0000%, CW robust acc: =20.0000%, ImpAtk success rate: =0.0000%]100%|██████████| 100/100 [00:25<00:00,  3.67audios/s, orig clean acc: =99.0000%, denoised clean acc: =10.0000%, CW robust acc: =10.0000%, ImpAtk success rate: =0.0000%]150audios [00:25,  6.30audios/s, orig clean acc: =99.0000%, denoised clean acc: =10.0000%, CW robust acc: =10.0000%, ImpAtk success rate: =0.0000%]                     100%|██████████| 100/100 [00:25<00:00,  3.91audios/s, orig clean acc: =99.0000%, denoised clean acc: =10.0000%, CW robust acc: =10.0000%, ImpAtk success rate: =0.0000%]
+on 100 test examples: 
+original clean test accuracy: 99.0000%
+denoised clean test accuracy: 10.0000%
+CW robust test accuracy: 10.0000%
+Imperceptible attack success rate: 0.0000%

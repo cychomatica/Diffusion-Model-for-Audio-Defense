@@ -1,0 +1,602 @@
+[
+    {
+        "id": 0,
+        "y_true": 0,
+        "y_pred": 0,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 1,
+        "y_true": 0,
+        "y_pred": 0,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 2,
+        "y_true": 0,
+        "y_pred": 0,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 3,
+        "y_true": 0,
+        "y_pred": 0,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 4,
+        "y_true": 0,
+        "y_pred": 0,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 5,
+        "y_true": 0,
+        "y_pred": 0,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 6,
+        "y_true": 0,
+        "y_pred": 0,
+        "certified_radius": 0.22434760630130768
+    },
+    {
+        "id": 7,
+        "y_true": 0,
+        "y_pred": -1,
+        "certified_radius": 0.0
+    },
+    {
+        "id": 8,
+        "y_true": 0,
+        "y_pred": 0,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 9,
+        "y_true": 0,
+        "y_pred": 0,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 10,
+        "y_true": 1,
+        "y_pred": 1,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 11,
+        "y_true": 1,
+        "y_pred": 1,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 12,
+        "y_true": 1,
+        "y_pred": 1,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 13,
+        "y_true": 1,
+        "y_pred": 1,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 14,
+        "y_true": 1,
+        "y_pred": 1,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 15,
+        "y_true": 1,
+        "y_pred": 1,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 16,
+        "y_true": 1,
+        "y_pred": -1,
+        "certified_radius": 0.0
+    },
+    {
+        "id": 17,
+        "y_true": 1,
+        "y_pred": 1,
+        "certified_radius": 0.15791113674640656
+    },
+    {
+        "id": 18,
+        "y_true": 1,
+        "y_pred": 1,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 19,
+        "y_true": 1,
+        "y_pred": 1,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 20,
+        "y_true": 2,
+        "y_pred": 2,
+        "certified_radius": 0.14274683594703674
+    },
+    {
+        "id": 21,
+        "y_true": 2,
+        "y_pred": 2,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 22,
+        "y_true": 2,
+        "y_pred": 2,
+        "certified_radius": 0.22434760630130768
+    },
+    {
+        "id": 23,
+        "y_true": 2,
+        "y_pred": 2,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 24,
+        "y_true": 2,
+        "y_pred": 2,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 25,
+        "y_true": 2,
+        "y_pred": 2,
+        "certified_radius": 0.07825177162885666
+    },
+    {
+        "id": 26,
+        "y_true": 2,
+        "y_pred": 2,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 27,
+        "y_true": 2,
+        "y_pred": 2,
+        "certified_radius": 0.11361036449670792
+    },
+    {
+        "id": 28,
+        "y_true": 2,
+        "y_pred": 2,
+        "certified_radius": 0.22434760630130768
+    },
+    {
+        "id": 29,
+        "y_true": 2,
+        "y_pred": 2,
+        "certified_radius": 0.21905937790870667
+    },
+    {
+        "id": 30,
+        "y_true": 3,
+        "y_pred": 3,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 31,
+        "y_true": 3,
+        "y_pred": -1,
+        "certified_radius": 0.0
+    },
+    {
+        "id": 32,
+        "y_true": 3,
+        "y_pred": 3,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 33,
+        "y_true": 3,
+        "y_pred": 3,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 34,
+        "y_true": 3,
+        "y_pred": 3,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 35,
+        "y_true": 3,
+        "y_pred": 3,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 36,
+        "y_true": 3,
+        "y_pred": 3,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 37,
+        "y_true": 3,
+        "y_pred": -1,
+        "certified_radius": 0.0
+    },
+    {
+        "id": 38,
+        "y_true": 3,
+        "y_pred": 3,
+        "certified_radius": 0.05107714608311653
+    },
+    {
+        "id": 39,
+        "y_true": 3,
+        "y_pred": 3,
+        "certified_radius": 0.1598641276359558
+    },
+    {
+        "id": 40,
+        "y_true": 4,
+        "y_pred": 4,
+        "certified_radius": 0.1507083922624588
+    },
+    {
+        "id": 41,
+        "y_true": 4,
+        "y_pred": 4,
+        "certified_radius": 0.1399785429239273
+    },
+    {
+        "id": 42,
+        "y_true": 4,
+        "y_pred": 4,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 43,
+        "y_true": 4,
+        "y_pred": 4,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 44,
+        "y_true": 4,
+        "y_pred": 4,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 45,
+        "y_true": 4,
+        "y_pred": 4,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 46,
+        "y_true": 4,
+        "y_pred": 4,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 47,
+        "y_true": 4,
+        "y_pred": 4,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 48,
+        "y_true": 4,
+        "y_pred": 4,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 49,
+        "y_true": 4,
+        "y_pred": -1,
+        "certified_radius": 0.0
+    },
+    {
+        "id": 50,
+        "y_true": 5,
+        "y_pred": 5,
+        "certified_radius": 0.177805095911026
+    },
+    {
+        "id": 51,
+        "y_true": 5,
+        "y_pred": 5,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 52,
+        "y_true": 5,
+        "y_pred": 5,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 53,
+        "y_true": 5,
+        "y_pred": 5,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 54,
+        "y_true": 5,
+        "y_pred": 5,
+        "certified_radius": 0.20088088512420654
+    },
+    {
+        "id": 55,
+        "y_true": 5,
+        "y_pred": 5,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 56,
+        "y_true": 5,
+        "y_pred": 5,
+        "certified_radius": 0.19983726739883423
+    },
+    {
+        "id": 57,
+        "y_true": 5,
+        "y_pred": 5,
+        "certified_radius": 0.047583118081092834
+    },
+    {
+        "id": 58,
+        "y_true": 5,
+        "y_pred": 5,
+        "certified_radius": 0.07356861233711243
+    },
+    {
+        "id": 59,
+        "y_true": 5,
+        "y_pred": 5,
+        "certified_radius": 0.005778846330940723
+    },
+    {
+        "id": 60,
+        "y_true": 6,
+        "y_pred": 6,
+        "certified_radius": 0.19435612857341766
+    },
+    {
+        "id": 61,
+        "y_true": 6,
+        "y_pred": 6,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 62,
+        "y_true": 6,
+        "y_pred": 6,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 63,
+        "y_true": 6,
+        "y_pred": 6,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 64,
+        "y_true": 6,
+        "y_pred": 6,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 65,
+        "y_true": 6,
+        "y_pred": 6,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 66,
+        "y_true": 6,
+        "y_pred": -1,
+        "certified_radius": 0.0
+    },
+    {
+        "id": 67,
+        "y_true": 6,
+        "y_pred": 6,
+        "certified_radius": 0.17725808918476105
+    },
+    {
+        "id": 68,
+        "y_true": 6,
+        "y_pred": 6,
+        "certified_radius": 0.035202447324991226
+    },
+    {
+        "id": 69,
+        "y_true": 6,
+        "y_pred": 2,
+        "certified_radius": 0.03787371888756752
+    },
+    {
+        "id": 70,
+        "y_true": 7,
+        "y_pred": 7,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 71,
+        "y_true": 7,
+        "y_pred": 7,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 72,
+        "y_true": 7,
+        "y_pred": 7,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 73,
+        "y_true": 7,
+        "y_pred": 7,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 74,
+        "y_true": 7,
+        "y_pred": 7,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 75,
+        "y_true": 7,
+        "y_pred": 7,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 76,
+        "y_true": 7,
+        "y_pred": 7,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 77,
+        "y_true": 7,
+        "y_pred": 7,
+        "certified_radius": 0.02973409742116928
+    },
+    {
+        "id": 78,
+        "y_true": 7,
+        "y_pred": 7,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 79,
+        "y_true": 7,
+        "y_pred": 7,
+        "certified_radius": 0.09005405008792877
+    },
+    {
+        "id": 80,
+        "y_true": 8,
+        "y_pred": 2,
+        "certified_radius": 0.02429019846022129
+    },
+    {
+        "id": 81,
+        "y_true": 8,
+        "y_pred": 8,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 82,
+        "y_true": 8,
+        "y_pred": 8,
+        "certified_radius": 0.17659591138362885
+    },
+    {
+        "id": 83,
+        "y_true": 8,
+        "y_pred": 8,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 84,
+        "y_true": 8,
+        "y_pred": 8,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 85,
+        "y_true": 8,
+        "y_pred": 8,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 86,
+        "y_true": 8,
+        "y_pred": 8,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 87,
+        "y_true": 8,
+        "y_pred": 8,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 88,
+        "y_true": 8,
+        "y_pred": -1,
+        "certified_radius": 0.0
+    },
+    {
+        "id": 89,
+        "y_true": 8,
+        "y_pred": 2,
+        "certified_radius": 0.07367204874753952
+    },
+    {
+        "id": 90,
+        "y_true": 9,
+        "y_pred": 9,
+        "certified_radius": 0.12361310422420502
+    },
+    {
+        "id": 91,
+        "y_true": 9,
+        "y_pred": 9,
+        "certified_radius": 0.15074603259563446
+    },
+    {
+        "id": 92,
+        "y_true": 9,
+        "y_pred": 9,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 93,
+        "y_true": 9,
+        "y_pred": 9,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 94,
+        "y_true": 9,
+        "y_pred": 9,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 95,
+        "y_true": 9,
+        "y_pred": 9,
+        "certified_radius": 0.22868739068508148
+    },
+    {
+        "id": 96,
+        "y_true": 9,
+        "y_pred": 9,
+        "certified_radius": 0.05700017884373665
+    },
+    {
+        "id": 97,
+        "y_true": 9,
+        "y_pred": 9,
+        "certified_radius": 0.13162922859191895
+    },
+    {
+        "id": 98,
+        "y_true": 9,
+        "y_pred": -1,
+        "certified_radius": 0.0
+    },
+    {
+        "id": 99,
+        "y_true": 9,
+        "y_pred": 9,
+        "certified_radius": 0.11448625475168228
+    }
+]

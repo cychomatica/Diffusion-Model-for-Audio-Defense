@@ -1,0 +1,18 @@
+use_gpu True
+gpu id: 0
+classifier model: CifarResNeXt
+classifier type: vanilla
+defense: Median_Smoothing
+attack: CW with linf_eps=65 & iter=10
+
+  0%|          | 0/100 [00:00<?, ?audios/s]Adversarial attack stage 1 for x_18 was not successful
+  0%|          | 0/100 [00:03<?, ?audios/s, orig clean acc: =98.0000%, denoised clean acc: =98.0000%, CW robust acc: =2.0000%, ImpAtk success rate: =0.0000%] 50%|█████     | 50/100 [00:03<00:03, 13.39audios/s, orig clean acc: =98.0000%, denoised clean acc: =98.0000%, CW robust acc: =2.0000%, ImpAtk success rate: =0.0000%]Adversarial attack stage 1 for x_5 was not successful
+Adversarial attack stage 1 for x_12 was not successful
+Adversarial attack stage 1 for x_23 was not successful
+Adversarial attack stage 1 for x_25 was not successful
+100%|██████████| 100/100 [00:05<00:00, 13.39audios/s, orig clean acc: =99.0000%, denoised clean acc: =99.0000%, CW robust acc: =5.0000%, ImpAtk success rate: =0.0000%]150audios [00:05, 33.82audios/s, orig clean acc: =99.0000%, denoised clean acc: =99.0000%, CW robust acc: =5.0000%, ImpAtk success rate: =0.0000%]                     100%|██████████| 100/100 [00:05<00:00, 19.20audios/s, orig clean acc: =99.0000%, denoised clean acc: =99.0000%, CW robust acc: =5.0000%, ImpAtk success rate: =0.0000%]
+on 100 test examples: 
+original clean test accuracy: 99.0000%
+denoised clean test accuracy: 99.0000%
+CW robust test accuracy: 5.0000%
+Imperceptible attack success rate: 0.0000%
