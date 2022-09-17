@@ -1,11 +1,0 @@
-use_gpu True
-gpu id: 1
-model_config: configs/config.json
-t: 5, rand_t: False, t_delta: 15
-use_bm: False
-classifier model: CifarResNeXt
-classifier type: vanilla
-defense: RevGuidedDiffusion with t=5
-attack: CW with linf_eps=65 & iter=100 & eot=100-1
-
-  0%|          | 0/100 [00:00<?, ?audios/s]

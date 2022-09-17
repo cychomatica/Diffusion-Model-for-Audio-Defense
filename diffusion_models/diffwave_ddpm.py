@@ -32,7 +32,7 @@ class DiffWave(torch.nn.Module):
 
     def forward(self, waveforms: Union[torch.Tensor, np.ndarray]):
 
-        if isinstance(type(waveforms), np.ndarray): 
+        if isinstance(waveforms, np.ndarray): 
             waveforms = torch.from_numpy(waveforms)
         
         # with torch.no_grad():
@@ -46,7 +46,7 @@ class DiffWave(torch.nn.Module):
     def diffusion(self, x_0: Union[torch.Tensor, np.ndarray]) -> torch.Tensor: 
         
         '''convert np.array to torch.tensor'''
-        if isinstance(type(x_0), np.ndarray): 
+        if isinstance(x_0, np.ndarray): 
             x_0 = torch.from_numpy(x_0)
 
         T, Alpha, Alpha_bar, Sigma = self.diffusion_hyperparams["T"], \
@@ -68,7 +68,7 @@ class DiffWave(torch.nn.Module):
     def reverse(self, x_t: Union[torch.Tensor, np.ndarray]) -> torch.Tensor: 
 
         '''convert np.array to torch.tensor'''
-        if isinstance(type(x_t), np.ndarray): 
+        if isinstance(x_t, np.ndarray): 
             x_t = torch.from_numpy(x_t)
 
         T, Alpha, Alpha_bar, Sigma = self.diffusion_hyperparams["T"], \
@@ -99,7 +99,7 @@ class DiffWave(torch.nn.Module):
     def fast_reverse(self, x_t: Union[torch.Tensor, np.ndarray]) -> torch.Tensor: 
 
         '''convert np.array to torch.tensor'''
-        if isinstance(type(x_t), np.ndarray): 
+        if isinstance(x_t, np.ndarray): 
             x_t = torch.from_numpy(x_t)
 
         T, Alpha, Alpha_bar, Sigma = self.diffusion_hyperparams["T"], \
@@ -263,7 +263,7 @@ class ReffWave(torch.nn.Module):
 
     def forward(self, waveforms: Union[torch.Tensor, np.ndarray]):
 
-        if isinstance(type(waveforms), np.ndarray): 
+        if isinstance(waveforms, np.ndarray): 
             waveforms = torch.from_numpy(waveforms)
 
         output = waveforms
@@ -277,7 +277,7 @@ class ReffWave(torch.nn.Module):
     def diffusion(self, x_0: Union[torch.Tensor, np.ndarray]) -> torch.Tensor: 
         
         '''convert np.array to torch.tensor'''
-        if isinstance(type(x_0), np.ndarray): 
+        if isinstance(x_0, np.ndarray): 
             x_0 = torch.from_numpy(x_0)
 
         T, Alpha, Alpha_bar, Sigma = self.diffusion_hyperparams["T"], \

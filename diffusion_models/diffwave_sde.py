@@ -133,7 +133,7 @@ class RevVPSDE(torch.nn.Module):
         return diffusion[:, None].expand(x.shape)
 
 #explicitly adapted for DiffWave
-class RevGuidedDiffusion(torch.nn.Module):
+class RevDiffWave(torch.nn.Module):
     def __init__(self, args, device=None):
         super().__init__()
 

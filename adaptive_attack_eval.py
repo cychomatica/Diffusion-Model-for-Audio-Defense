@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     '''SC09 classifier arguments'''
     parser.add_argument("--data_path", default='datasets/speech_commands/test')
-    parser.add_argument("--classifier_model", type=str, choices=['resnext29_8_64', 'vgg19_bn', 'densenet_bc_100_12', 'wideresnet28_10'], default='resnext29_8_64')
+    parser.add_argument("--classifier_model", type=str, choices=['resnext29_8_64', 'vgg19_bn', 'densenet_bc_100_12', 'wideresnet28_10', 'm5'], default='resnext29_8_64')
     parser.add_argument("--classifier_type", type=str, choices=['advtr', 'vanilla'], default='vanilla')
     parser.add_argument("--classifier_input", choices=['mel32'], default='mel32', help='input of NN')
     parser.add_argument("--num_per_class", type=int, default=10)
@@ -35,17 +35,18 @@ if __name__ == '__main__':
 
     '''attack arguments'''
     parser.add_argument('--attack', type=str, choices=['CW', 'Qin-I', 'Kenansville', 'FAKEBOB', 'SirenAttack'], default='CW')
-    parser.add_argument('--defense', type=str, choices=['Diffusion', 'AS', 'MS', 'DS', 'LPF', 'BPF', 'FeCo', 'None'], default='Diffusion')
-    parser.add_argument('--bound_norm', type=str, choices=['linf', 'l2'], default='l2')
+    parser.add_argument('--defense', type=str, choices=['Diffusion', 'AS', 'MS', 'DS', 'LPF', 'BPF', 'FeCo', 'None'], default='None')
+    parser.add_argument('--bound_norm', type=str, choices=['linf', 'l2'], default='linf')
     parser.add_argument('--eps', type=int, default=65)
-    parser.add_argument('--max_iter_1', type=int, default=100)
+    parser.add_argument('--max_iter_1', type=int, default=10)
     parser.add_argument('--max_iter_2', type=int, default=0)
-    parser.add_argument('--eot_attack_size', type=int, default=100)
+    parser.add_argument('--eot_attack_size', type=int, default=1)
     parser.add_argument('--eot_defense_size', type=int, default=1)
+    parser.add_argument('--verbose', type=int, default=0)
 
     '''device arguments'''
     parser.add_argument("--dataload_workers_nums", type=int, default=8, help='number of workers for dataloader')
-    parser.add_argument("--batch_size", type=int, default=8, help='batch size')
+    parser.add_argument("--batch_size", type=int, default=20, help='batch size')
     parser.add_argument('--gpu', type=int, default=1)
 
     '''file saving arguments'''
@@ -61,7 +62,10 @@ if __name__ == '__main__':
     print('gpu id: {}'.format(args.gpu))
 
 
-    '''set audio system model'''
+    '''
+        set audio system model
+    '''
+
     '''SC09 classifier setting'''
     from transforms import *
     from datasets.sc_dataset import *
@@ -75,12 +79,19 @@ if __name__ == '__main__':
         classifier_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/densenet_bc_100_12_sgd_plateau_bs96_lr1.0e-02_wd1.0e-02'
     elif args.classifier_model == 'wideresnet28_10':
         classifier_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/wideresnet28_10_sgd_plateau_bs96_lr1.0e-02_wd1.0e-02'
-    
+    elif args.classifier_model == 'm5':
+        classifier_path = 'audio_models/M5/checkpoints/kernel_size=160'
+    else:
+        raise NotImplementedError(f'Unknown classifier model: {args.classifier_model}!')
+
     if args.classifier_type == 'vanilla': 
         classifier_path = os.path.join(classifier_path, 'vanilla-best-acc.pth')
     elif args.classifier_type == 'advtr': 
         classifier_path = os.path.join(classifier_path, 'advtr-best-acc.pth')
+    else:
+        raise NotImplementedError(f'Unknown classifier type: {args.classifier_type}!')
 
+    # classifier_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/resnext29_8_64_sgd_plateau_bs96_lr1.0e-02_wd1.0e-02/1663209840164-best-acc.pth'
     Classifier = create_model(classifier_path)
     if use_gpu:
         torch.backends.cudnn.benchmark = True
@@ -92,7 +103,7 @@ if __name__ == '__main__':
                                 pin_memory=use_gpu, num_workers=args.dataload_workers_nums)
     criterion = torch.nn.CrossEntropyLoss()
 
-    '''preprocessing setting'''
+    '''preprocessing setting (if use acoustic features like mel-spectrogram)'''
     n_mels = 32
     if args.classifier_input == 'mel40':
         n_mels = 40
@@ -100,20 +111,21 @@ if __name__ == '__main__':
     Amp2DB = torchaudio.transforms.AmplitudeToDB(stype='power')
     Wave2Spect = Compose([MelSpecTrans.cuda(), Amp2DB.cuda()])
 
-
     '''defense setting'''
     from audio_system import AudioSystem
     if args.defense == 'None':
-        AS_MODEL = AudioSystem(classifier=Classifier, transform=Wave2Spect, defender=None)
+        if args.classifier_model == 'm5': # M5Net takes the raw audio as input
+            AS_MODEL = AudioSystem(classifier=Classifier, transform=None, defender=None)
+        else: 
+            AS_MODEL = AudioSystem(classifier=Classifier, transform=Wave2Spect, defender=None)
         print('classifier model: {}'.format(Classifier._get_name()))
         print('classifier type: {}'.format(args.classifier_type))
         print('defense: None')
+
     else:
         if args.defense == 'Diffusion':
-            # from diffusion_models.diffwave_ddpm import *
-            # Defender = create_diffwave_model(args.ddpm_path, args.ddpm_config, args.t)
             from diffusion_models.diffwave_sde import *
-            Defender = RevGuidedDiffusion(args)
+            Defender = RevDiffWave(args)
         elif args.defense == 'AS': 
             from transforms.time_defense import *
             Defender = TimeDomainDefense(defense_type='AS')
@@ -133,52 +145,71 @@ if __name__ == '__main__':
             from transforms.feature_defense import *
             Defender = FeCo(param=0.2)
         else:
-            raise NotImplementedError(f'Unknown defense type: {args.defense}!')
-        AS_MODEL = AudioSystem(classifier=Classifier, transform=Wave2Spect, defender=Defender)
+            raise NotImplementedError(f'Unknown defense: {args.defense}!')
+        
+        if args.classifier_model == 'm5':
+            AS_MODEL = AudioSystem(classifier=Classifier, transform=None, defender=Defender)
+        else: 
+            AS_MODEL = AudioSystem(classifier=Classifier, transform=Wave2Spect, defender=Defender)
         print('classifier model: {}'.format(Classifier._get_name()))
         print('classifier type: {}'.format(args.classifier_type))
         if args.defense == 'Diffusion':
             print('defense: {} with t={}'.format(Defender._get_name(), args.t))
         else:
             print('defense: {}'.format(Defender._get_name()))
-
+    AS_MODEL.eval()
 
     '''attack setting'''
     from robustness_eval.white_box_attack import *
-    if args.attack == 'CW':
+    if args.attack == 'CW': # can be seen as PGD
         Attacker = AudioAttack(model=AS_MODEL, 
                                 eps=args.eps, norm=args.bound_norm,
                                 max_iter_1=args.max_iter_1, max_iter_2=0,
                                 learning_rate_1=args.eps/5, 
                                 eot_attack_size=args.eot_attack_size,
-                                eot_defense_size=args.eot_defense_size)
-        print('attack: {} with {}_eps={} & iter={} & eot={}-{}\n'.format(args.attack, args.bound_norm, args.eps, args.max_iter_1, args.eot_attack_size, args.eot_defense_size))
-    elif args.attack == 'Qin-I':
+                                eot_defense_size=args.eot_defense_size,
+                                verbose=args.verbose)
+        print('attack: {} with {}_eps={} & iter={} & eot={}-{}\n'\
+            .format(args.attack, args.bound_norm, args.eps, args.max_iter_1, args.eot_attack_size, args.eot_defense_size))
+    elif args.attack == 'Qin-I': # not used
         PsyMask = PsychoacousticMasker()
         Attacker = AudioAttack(model=AS_MODEL, masker=PsyMask, 
                                 eps=args.eps, norm=args.bound_norm,
                                 max_iter_1=args.max_iter_1, max_iter_2=args.max_iter_2,
-                                learning_rate_1=args.eps/5)
+                                learning_rate_1=args.eps/5,
+                                verbose=args.verbose)
     elif args.attack == 'Kenansville':
-        Attacker = Kenansville(model=AS_MODEL, atk_name='ssa', 
-                               max_iter=30, raster_width=100, verbose=1)
-        print('attack: {} with raster_width={} & iter={}\n'.format(args.attack, 100, 30))
+        method = 'ssa'
+        max_iter = 30
+        raster_width = 100
+        Attacker = Kenansville(model=AS_MODEL, atk_name=method, 
+                               max_iter=max_iter, raster_width=raster_width, 
+                               verbose=args.verbose, batch_size=args.batch_size)
+        print('attack: {} with method={} & raster_width={} & iter={}\n'\
+            .format(args.attack, method, max_iter, raster_width))
     elif args.attack == 'FAKEBOB':
         eps = 0.002 #args.eps / (2**15)
-        Attacker = FAKEBOB(model=AS_MODEL, task='SCR', targeted=False, verbose=0,
-                           confidence=0.5, epsilon=eps, max_lr=5e-4, min_lr=1e-4,
-                           max_iter=200, samples_per_draw=50)
-        
+        confidence = 0.5
+        max_iter = 200
+        samples_per_draw = 50
+        Attacker = FAKEBOB(model=AS_MODEL, task='SCR', targeted=False, verbose=args.verbose,
+                           confidence=confidence, epsilon=eps, max_lr=5e-4, min_lr=1e-4,
+                           max_iter=max_iter, samples_per_draw=samples_per_draw, batch_size=args.batch_size)
+        print('attack: {} with eps={} & confidence={} & iter={} & samples_per_draw={}\n'\
+            .format(args.attack, eps, confidence, max_iter, samples_per_draw))
     elif args.attack == 'SirenAttack':
         eps = 0.002 #args.eps / (2**15)
-        Attacker = SirenAttack(model=AS_MODEL, task='SCR', targeted=False, verbose=0,
-                               epsilon=eps, max_epoch=300, max_iter=30,
-                               n_particles=25)
+        max_epoch = 300
+        max_iter = 30
+        n_particles = 25
+        Attacker = SirenAttack(model=AS_MODEL, task='SCR', targeted=False, verbose=args.verbose, batch_size=args.batch_size, 
+                               epsilon=eps, max_epoch=max_epoch, max_iter=max_iter, n_particles=n_particles)
+        print('attack: {} with eps={} & max_epoch={} & iter={} & n_particles={}\n'\
+            .format(args.attack, eps, max_epoch, max_iter, n_particles))
     # elif args.attack == 'SPSA':
     #     Attacker = LinfSPSA(model=Classifier, transform=Wave2Spect, defender=DiffWave_VPSDE)
     else:
         raise AttributeError("this version does not support '{}' at present".format(args.attack))
-    # print('attack: {} with {}_eps={} & iter={} & eot={}\n'.format(args.attack, args.bound_norm, args.eps, args.max_iter_1, args.eot_size))
 
     
     '''robustness eval'''
@@ -201,22 +232,24 @@ if __name__ == '__main__':
         targets = targets.cuda()
 
         '''original audio'''
-        y_orig = torch.squeeze(Classifier(Wave2Spect(waveforms)).max(1, keepdim=True)[1])
+        pred_clean = AS_MODEL(waveforms, False).max(1, keepdim=True)[1].squeeze()
+        # y_orig = torch.squeeze(Classifier(Wave2Spect(waveforms)).max(1, keepdim=True)[1])
 
         '''denoised original audio'''
         if args.defense == 'None':
             waveforms_defended = waveforms
         else:
             waveforms_defended = Defender(waveforms)
-            # feature = Wave2Spect(torch.squeeze(waveforms,1))
-            # feature_defended = Defender(feature)
-        y_orig_denoised = torch.squeeze(Classifier(Wave2Spect(waveforms_defended)).max(1, keepdim=True)[1])
+        pred_defended = AS_MODEL(waveforms_defended, False).max(1, keepdim=True)[1].squeeze()
+        # y_orig_denoised = torch.squeeze(Classifier(Wave2Spect(waveforms_defended)).max(1, keepdim=True)[1])
 
         '''adversarial audio'''
-        waveforms_adv, attack_success_1, attack_success_2 = Attacker.generate(x=waveforms, y=targets, targeted=False)
-        # waveforms_adv, success = Attacker.generate(x=waveforms, y=targets)
-        # attack_success_1 = torch.tensor(success).sum().item()
-        # waveforms_adv = torch.tensor(waveforms_adv).to(waveforms.device)
+        waveforms_adv, attack_success = Attacker.generate(x=waveforms, y=targets, targeted=False)
+        if isinstance(waveforms_adv, np.ndarray):
+            if waveforms_adv.dtype == np.int16:
+                waveforms_adv = waveforms_adv / (2**15)
+            waveforms_adv = torch.tensor(waveforms_adv, dtype=waveforms.dtype).to(waveforms.device)
+            
 
         '''denoised adversarial audio'''
         if args.defense == 'None':
@@ -254,24 +287,35 @@ if __name__ == '__main__':
 
 
         '''metrics output'''
-        correct_orig += (y_orig==targets).sum().item()
-        correct_orig_denoised += (y_orig_denoised==targets).sum().item()
-        correct_adv_1 += waveforms.shape[0] - attack_success_1
-        success_adv_2 += 0 #attack_success_2
         total += waveforms.shape[0]
-
+        correct_orig += (pred_clean==targets).sum().item()
+        correct_orig_denoised += (pred_defended==targets).sum().item()
         acc_orig = correct_orig / total * 100
         acc_orig_denoised = correct_orig_denoised / total * 100
-        acc_adv_1 = correct_adv_1 / total * 100
-        sr_adv_2 = success_adv_2 / total * 100
-        pbar.set_postfix(
-            {
-                'orig clean acc: ': '{:.4f}%'.format(acc_orig),
-                'denoised clean acc: ': '{:.4f}%'.format(acc_orig_denoised),
-                'CW robust acc: ': '{:.4f}%'.format(acc_adv_1),
-                'ImpAtk success rate: ': '{:.4f}%'.format(sr_adv_2),
-            }
-        )
+
+        if isinstance(attack_success, tuple):
+            correct_adv_1 += waveforms.shape[0] - torch.tensor(attack_success[0]).sum().item()
+            acc_adv_1 = correct_adv_1 / total * 100
+            pbar_info = {
+                        'orig clean acc: ': '{:.4f}%'.format(acc_orig),
+                        'denoised clean acc: ': '{:.4f}%'.format(acc_orig_denoised),
+                        '{} robust acc: '.format(args.attack): '{:.4f}%'.format(acc_adv_1)
+                        }
+            if attack_success[1] is not None:
+                success_adv_2 += torch.tensor(attack_success[1]).sum().item()
+                sr_adv_2 = success_adv_2 / total * 100
+                pbar_info.update({'ImpAtk success rate: ': '{:.4f}%'.format(sr_adv_2)})
+        else:
+            correct_adv_1 += waveforms.shape[0] - torch.tensor(attack_success).sum().item()
+            acc_adv_1 = correct_adv_1 / total * 100
+
+            pbar_info = {
+                        'orig clean acc: ': '{:.4f}%'.format(acc_orig),
+                        'denoised clean acc: ': '{:.4f}%'.format(acc_orig_denoised),
+                        '{} robust acc: '.format(args.attack): '{:.4f}%'.format(acc_adv_1)
+                        }
+
+        pbar.set_postfix(pbar_info)
         pbar.update(1)
 
 
@@ -280,5 +324,6 @@ if __name__ == '__main__':
     print('original clean test accuracy: {:.4f}%'.format(acc_orig))
     print('denoised clean test accuracy: {:.4f}%'.format(acc_orig_denoised))
     print('CW robust test accuracy: {:.4f}%'.format(acc_adv_1))
-    print('Imperceptible attack success rate: {:.4f}%'.format(sr_adv_2))
+    if 'sr_adv_2' in dir():
+        print('Imperceptible attack success rate: {:.4f}%'.format(sr_adv_2))
 

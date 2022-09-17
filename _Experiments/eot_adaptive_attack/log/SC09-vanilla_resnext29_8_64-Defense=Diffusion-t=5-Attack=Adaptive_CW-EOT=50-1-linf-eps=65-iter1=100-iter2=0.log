@@ -1,20 +1,0 @@
-use_gpu True
-gpu id: 1
-model_config: configs/config.json
-t: 5, rand_t: False, t_delta: 15
-use_bm: False
-classifier model: CifarResNeXt
-classifier type: vanilla
-defense: RevGuidedDiffusion with t=5
-attack: CW with linf_eps=65 & iter=100 & eot=50-1
-
-  0%|          | 0/100 [00:00<?, ?audios/s]Adversarial attack stage 1 for x_0 was not successful
-Adversarial attack stage 1 for x_1 was not successful
-Adversarial attack stage 1 for x_2 was not successful
-Adversarial attack stage 1 for x_3 was not successful
-Adversarial attack stage 1 for x_4 was not successful
-Adversarial attack stage 1 for x_5 was not successful
-Adversarial attack stage 1 for x_6 was not successful
-Adversarial attack stage 1 for x_8 was not successful
-Adversarial attack stage 1 for x_9 was not successful
-  0%|          | 0/100 [17:34:30<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =90.0000%, CW robust acc: =90.0000%, ImpAtk success rate: =0.0000%] 10%|█         | 10/100 [17:34:30<158:10:35, 6327.06s/audios, orig clean acc: =100.0000%, denoised clean acc: =90.0000%, CW robust acc: =90.0000%, ImpAtk success rate: =0.0000%]

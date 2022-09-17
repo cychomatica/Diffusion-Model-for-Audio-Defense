@@ -64,6 +64,7 @@ class EOT(nn.Module):
         
         scores = scores / EOT_num_batches
         loss = loss / EOT_num_batches
-        grad = grad / EOT_num_batches
+        if grad is not None:
+            grad = grad / EOT_num_batches
         
         return scores, loss, grad, decisions

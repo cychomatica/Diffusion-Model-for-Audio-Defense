@@ -1,0 +1,12 @@
+use_gpu True
+gpu id: 1
+classifier model: CifarResNeXt
+classifier type: vanilla
+defense: None
+attack: CW with linf_eps=65 & iter=50 & eot=1-1
+
+  0%|          | 0/100 [00:00<?, ?audios/s]  0%|          | 0/100 [00:05<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =0.0000%] 25%|██▌       | 25/100 [00:05<00:15,  4.89audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =0.0000%] 50%|█████     | 50/100 [00:08<00:10,  4.89audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =0.0000%] 75%|███████▌  | 75/100 [00:08<00:02, 10.15audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =0.0000%]100%|██████████| 100/100 [00:11<00:00, 10.15audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =1.3333%]125audios [00:11, 12.57audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =1.3333%]                     125audios [00:14, 12.57audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =1.0000%]150audios [00:14, 10.96audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =1.0000%]100%|██████████| 100/100 [00:14<00:00,  6.93audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =1.0000%]
+on 100 test examples: 
+original clean test accuracy: 100.0000%
+denoised clean test accuracy: 100.0000%
+CW robust test accuracy: 1.0000%

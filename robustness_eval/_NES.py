@@ -1,5 +1,5 @@
 
-from .utils import resolve_prediction
+from ._utils import resolve_prediction
 import torch
 import torch.nn as nn
 

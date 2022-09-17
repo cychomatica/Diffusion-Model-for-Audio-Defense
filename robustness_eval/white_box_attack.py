@@ -298,7 +298,8 @@ class AudioAttack():
         decrease_factor_alpha: float = 0.8,
         num_iter_decrease_alpha: int = 50,
         eot_attack_size: int=15,
-        eot_defense_size: int=15
+        eot_defense_size: int=15,
+        verbose: int=1
         ) -> None:
 
         self.model = model
@@ -328,6 +329,8 @@ class AudioAttack():
         self.eot_attack_size = eot_attack_size
         self.eot_defense_size = eot_defense_size
 
+        self.verbose = verbose
+
         if self.eot_attack_size > 1 or self.eot_defense_size > 1:
             from ._EOT import EOT
             self.eot_model = EOT(model=model, loss=self.criterion, EOT_size=eot_attack_size)
@@ -343,18 +346,18 @@ class AudioAttack():
         self._targeted = targeted
 
         '''convert np.array to torch.tensor'''
-        if isinstance(type(x), np.ndarray): 
+        if isinstance(x, np.ndarray): 
             x = torch.from_numpy(x)
-        if isinstance(type(y), np.ndarray): 
+        if isinstance(y, np.ndarray): 
             y = torch.from_numpy(y)
         
         x_adv, success_stage_1 = self.stage_1(x, y)
 
         if self.max_iter_2 > 0:
             x_adv, success_stage_2 = self.stage_2(x, x_adv, y)
-            return x_adv, success_stage_1, success_stage_2
+            return x_adv, (success_stage_1, success_stage_2)
         else:
-            return x_adv, success_stage_1, 0
+            return x_adv, (success_stage_1, None)
 
     def stage_1(self, x: torch.Tensor, y: torch.Tensor):
         
@@ -448,14 +451,17 @@ class AudioAttack():
             delta.grad.zero_()
         
         x_pert = x + delta
-        success_stage_1 = batch_size
+        # success_stage_1 = batch_size
+        success_stage_1 = [True] * batch_size
 
         ''' return perturbed x if no adversarial example found '''
         for j in range(batch_size):
             if x_adv[j] is None:
-                print("Adversarial attack stage 1 for x_{} was not successful".format(j))
+                if self.verbose:
+                    print("Adversarial attack stage 1 for x_{} was not successful".format(j))
                 x_adv[j] = x_pert[j]
-                success_stage_1 = success_stage_1 - 1 
+                # success_stage_1 = success_stage_1 - 1 
+                success_stage_1[j] = False
 
         x_adv = torch.unsqueeze(torch.cat(x_adv, dim=0), 1)
 
@@ -569,24 +575,29 @@ class AudioAttack():
             # note: avoids nan values in loss theta, which can occur when loss converges to zero.
             for j in range(batch_size):
                 if loss_theta[j] < self.loss_theta_min and not early_stop[j]:
-                    print(
-                        "Batch sample {} reached minimum threshold of {} for theta loss.".format(j, self.loss_theta_min)
-                        )
+                    if self.verbose:
+                        print(
+                            "Batch sample {} reached minimum threshold of {} for theta loss.".format(j, self.loss_theta_min)
+                            )
                     early_stop[j] = True
             if all(early_stop):
-                print(
-                    "All batch samples reached minimum threshold for theta loss. Stopping early at iteration {}".format(i)
-                     )
+                if self.verbose:
+                    print(
+                        "All batch samples reached minimum threshold for theta loss. Stopping early at iteration {}".format(i)
+                        )
                 break
 
         # return perturbed x if no adversarial example found
-        success_stage_2 = batch_size
+        # success_stage_2 = batch_size
+        success_stage_2 = [True] * batch_size
 
         for j in range(batch_size):
             if x_imperceptible[j] is None:
-                print("Adversarial attack stage 2 for x_{} was not successful".format(j))
+                if self.verbose:
+                    print("Adversarial attack stage 2 for x_{} was not successful".format(j))
                 x_imperceptible[j] = x_pert[j]
-                success_stage_2 = success_stage_2 - 1 
+                # success_stage_2 = success_stage_2 - 1 
+                success_stage_2[j] = False
 
         x_imperceptible = torch.unsqueeze(torch.cat(x_imperceptible, dim=0), 1)
 
@@ -909,9 +920,9 @@ class LinfSPSA():
         self._targeted = targeted
 
         '''convert np.array to torch.tensor'''
-        if isinstance(type(x), np.ndarray): 
+        if isinstance(x, np.ndarray): 
             x = torch.from_numpy(x)
-        if isinstance(type(y), np.ndarray): 
+        if isinstance(y, np.ndarray): 
             y = torch.from_numpy(y)
         
         x_adv = self.spsa_perturb(x, y, num_samples)
@@ -949,7 +960,7 @@ class LinfSPSA():
     def predict(self, x: Union[torch.Tensor, np.ndarray]):
 
         '''convert np.array to torch.tensor'''
-        if isinstance(type(x), np.ndarray): 
+        if isinstance(x, np.ndarray): 
             x = torch.from_numpy(x)
 
         if self.defender is not None:

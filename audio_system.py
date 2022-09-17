@@ -17,13 +17,16 @@ class AudioSystem(torch.nn.Module):
         self.transform = transform
         self.defender = defender
     
-    def forward(self, x):
+    def forward(self, x, defend=True):
         
-        if self.defender is not None:
+        if defend == True and self.defender is not None:
             output = self.defender(x)
         else: 
             output = x
-        output = self.transform(output)
+        
+        if self.transform is not None: 
+            output = self.transform(output)
+            
         output = self.classifier(output)
 
         return output

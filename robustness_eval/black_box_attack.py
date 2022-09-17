@@ -3,7 +3,7 @@ import torch
 
 from ._EOT import EOT
 from ._NES import NES
-from .utils import resolve_loss, resolve_prediction
+from ._utils import resolve_loss, resolve_prediction
 
 
 '''
@@ -177,11 +177,12 @@ class FAKEBOB():
         
         return mean_loss, grad, adver_loss, adver_score, predict
 
-    def generate(self, x, y):
+    def generate(self, x, y, targeted=False):
 
         if self.task in ['SV', 'OSI'] and self.threshold is None:
             raise NotImplementedError('You are running black box attack for {} task, \
                         but the threshold not specified. Consider calling estimate threshold')
+        self.targeted = targeted
         self.loss, self.grad_sign = resolve_loss('Margin', self.targeted, self.confidence, self.task, self.threshold, False)
         self.EOT_wrapper = EOT(self.model, self.loss, self.EOT_size, self.EOT_batch_size, False)
 
@@ -535,11 +536,12 @@ class SirenAttack():
                 consider_index_u
     
 
-    def generate(self, x, y):
+    def generate(self, x, y, targeted=False):
 
         if self.task in ['SV', 'OSI'] and self.threshold is None:
             raise NotImplementedError('You are running black box attack for {} task, \
                         but the threshold not specified. Consider Estimating the threshold by FAKEBOB!')
+        self.targeted = targeted
         self.loss, self.grad_sign = resolve_loss('Margin', self.targeted, self.confidence, self.task, self.threshold, False)
         self.EOT_wrapper = EOT(self.model, self.loss, self.EOT_size, self.EOT_batch_size, False)
 
@@ -623,7 +625,9 @@ class Kenansville(object):
             return x_adv, success
             
 
-    def generate(self, x, y, fs=16_000):
+    def generate(self, x, y, targeted=False, fs=16_000):
+
+        self.targeted = targeted
 
         n_audios, n_channels, _ = x.size()
         assert n_channels == 1, 'Only Support Mono Audio'
