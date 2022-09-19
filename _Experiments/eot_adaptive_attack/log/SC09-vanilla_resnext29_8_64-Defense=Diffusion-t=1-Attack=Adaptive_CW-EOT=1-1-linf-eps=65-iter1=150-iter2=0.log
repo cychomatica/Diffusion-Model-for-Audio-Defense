@@ -1,0 +1,15 @@
+use_gpu True
+gpu id: 3
+model_config: configs/config.json
+t: 1, rand_t: False, t_delta: 15
+use_bm: False
+classifier model: CifarResNeXt
+classifier type: vanilla
+defense: RevDiffWave with t=1
+attack: CW with linf_eps=65 & iter=150 & eot=1-1
+
+  0%|          | 0/120 [00:00<?, ?audios/s]  0%|          | 0/120 [09:49<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =76.6667%] 25%|██▌       | 30/120 [09:49<29:29, 19.66s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =76.6667%] 50%|█████     | 60/120 [19:37<19:39, 19.66s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =78.3333%] 75%|███████▌  | 90/120 [19:37<06:10, 12.35s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =78.3333%]100%|██████████| 120/120 [29:24<00:00, 12.35s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =73.3333%]150audios [29:24, 11.03s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =73.3333%]                     150audios [32:48, 11.03s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =72.0000%]180audios [32:48,  9.90s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =72.0000%]100%|██████████| 120/120 [32:49<00:00, 16.41s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =72.0000%]
+on 100 test examples: 
+original clean test accuracy: 100.0000%
+denoised clean test accuracy: 100.0000%
+CW robust test accuracy: 72.0000%

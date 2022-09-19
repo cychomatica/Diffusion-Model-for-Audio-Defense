@@ -98,7 +98,7 @@ def LPF(new, fs=16000, wp=4000, param=8000, gpass=3, gstop=40, same_size=True, b
     new_audio = new_audio.clamp(clip_min, clip_max)
     return new_audio.to(new.device).view(ori_shape)
 
-def BPF(new, fs=16000, wp=[300, 4000], param=[50, 5000], gpass=3, gstop=40, same_size=True, bits=16):
+def BPF(new, fs=16000, wp=[300, 4000], param=[50, 8000], gpass=3, gstop=40, same_size=True, bits=16):
 
     assert torch.is_tensor(new) == True
     ori_shape = new.shape

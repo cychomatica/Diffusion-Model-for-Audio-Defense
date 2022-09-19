@@ -134,7 +134,7 @@ def train(epoch):
 
         if use_gpu:
             inputs = inputs.cuda()
-            targets = targets.cuda(async=True)
+            targets = targets.cuda(non_blocking=True)
 
         # forward/backward
         outputs = model(inputs)
@@ -153,7 +153,7 @@ def train(epoch):
         pred = outputs.data.max(1, keepdim=True)[1]
         if args.mixup:
             _, targets = batch
-            targets = Variable(targets, requires_grad=False).cuda(async=True)
+            targets = Variable(targets, requires_grad=False).cuda(non_blocking=True)
         correct += pred.eq(targets.data.view_as(pred)).sum()
         total += targets.size(0)
 
@@ -189,7 +189,7 @@ def test(epoch):
 
         if use_gpu:
             inputs = inputs.cuda()
-            targets = targets.cuda(async=True)
+            targets = targets.cuda(non_blocking=True)
 
         # forward
         outputs = model(inputs)

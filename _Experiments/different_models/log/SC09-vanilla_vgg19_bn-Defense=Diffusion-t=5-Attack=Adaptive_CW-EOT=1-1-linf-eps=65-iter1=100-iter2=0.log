@@ -1,0 +1,67 @@
+use_gpu True
+gpu id: 0
+model_config: configs/config.json
+t: 5, rand_t: False, t_delta: 15
+use_bm: False
+classifier model: VGG
+classifier type: vanilla
+defense: RevDiffWave with t=5
+attack: CW with linf_eps=65 & iter=100 & eot=1-1
+
+  0%|          | 0/100 [00:00<?, ?audios/s]Adversarial attack stage 1 for x_0 was not successful
+Adversarial attack stage 1 for x_1 was not successful
+Adversarial attack stage 1 for x_2 was not successful
+Adversarial attack stage 1 for x_3 was not successful
+Adversarial attack stage 1 for x_4 was not successful
+Adversarial attack stage 1 for x_5 was not successful
+Adversarial attack stage 1 for x_6 was not successful
+Adversarial attack stage 1 for x_8 was not successful
+Adversarial attack stage 1 for x_9 was not successful
+Adversarial attack stage 1 for x_10 was not successful
+Adversarial attack stage 1 for x_11 was not successful
+Adversarial attack stage 1 for x_12 was not successful
+Adversarial attack stage 1 for x_14 was not successful
+Adversarial attack stage 1 for x_15 was not successful
+Adversarial attack stage 1 for x_17 was not successful
+Adversarial attack stage 1 for x_18 was not successful
+Adversarial attack stage 1 for x_19 was not successful
+  0%|          | 0/100 [49:06<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =85.0000%] 20%|██        | 20/100 [49:06<3:16:25, 147.32s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =85.0000%]Adversarial attack stage 1 for x_1 was not successful
+Adversarial attack stage 1 for x_2 was not successful
+Adversarial attack stage 1 for x_4 was not successful
+Adversarial attack stage 1 for x_6 was not successful
+Adversarial attack stage 1 for x_8 was not successful
+Adversarial attack stage 1 for x_9 was not successful
+Adversarial attack stage 1 for x_10 was not successful
+Adversarial attack stage 1 for x_12 was not successful
+Adversarial attack stage 1 for x_13 was not successful
+Adversarial attack stage 1 for x_15 was not successful
+Adversarial attack stage 1 for x_16 was not successful
+Adversarial attack stage 1 for x_19 was not successful
+ 40%|████      | 40/100 [1:38:05<2:27:19, 147.32s/audios, orig clean acc: =100.0000%, denoised clean acc: =97.5000%, CW robust acc: =72.5000%] 60%|██████    | 60/100 [1:38:05<1:01:44, 92.62s/audios, orig clean acc: =100.0000%, denoised clean acc: =97.5000%, CW robust acc: =72.5000%] Adversarial attack stage 1 for x_0 was not successful
+Adversarial attack stage 1 for x_1 was not successful
+Adversarial attack stage 1 for x_2 was not successful
+Adversarial attack stage 1 for x_3 was not successful
+Adversarial attack stage 1 for x_4 was not successful
+Adversarial attack stage 1 for x_5 was not successful
+Adversarial attack stage 1 for x_6 was not successful
+Adversarial attack stage 1 for x_7 was not successful
+Adversarial attack stage 1 for x_8 was not successful
+Adversarial attack stage 1 for x_11 was not successful
+Adversarial attack stage 1 for x_12 was not successful
+Adversarial attack stage 1 for x_13 was not successful
+Adversarial attack stage 1 for x_14 was not successful
+Adversarial attack stage 1 for x_15 was not successful
+Adversarial attack stage 1 for x_16 was not successful
+ 80%|████████  | 80/100 [2:27:04<30:52, 92.62s/audios, orig clean acc: =100.0000%, denoised clean acc: =98.3333%, CW robust acc: =73.3333%]  100%|██████████| 100/100 [2:27:04<00:00, 82.78s/audios, orig clean acc: =100.0000%, denoised clean acc: =98.3333%, CW robust acc: =73.3333%]Adversarial attack stage 1 for x_1 was not successful
+Adversarial attack stage 1 for x_2 was not successful
+Adversarial attack stage 1 for x_3 was not successful
+Adversarial attack stage 1 for x_5 was not successful
+Adversarial attack stage 1 for x_7 was not successful
+Adversarial attack stage 1 for x_10 was not successful
+Adversarial attack stage 1 for x_11 was not successful
+Adversarial attack stage 1 for x_12 was not successful
+Adversarial attack stage 1 for x_13 was not successful
+Adversarial attack stage 1 for x_15 was not successful
+Adversarial attack stage 1 for x_16 was not successful
+Adversarial attack stage 1 for x_18 was not successful
+100%|██████████| 100/100 [3:16:03<00:00, 82.78s/audios, orig clean acc: =100.0000%, denoised clean acc: =95.0000%, CW robust acc: =70.0000%]120audios [3:16:03, 100.02s/audios, orig clean acc: =100.0000%, denoised clean acc: =95.0000%, CW robust acc: =70.0000%]                    

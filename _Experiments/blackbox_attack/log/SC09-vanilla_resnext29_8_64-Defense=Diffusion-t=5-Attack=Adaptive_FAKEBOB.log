@@ -1,0 +1,11 @@
+use_gpu True
+gpu id: 2
+model_config: configs/config.json
+t: 5, rand_t: False, t_delta: 15
+use_bm: False
+classifier model: CifarResNeXt
+classifier type: vanilla
+defense: RevDiffWave with t=5
+attack: FAKEBOB with eps=0.002 & confidence=0.5 & iter=200 & samples_per_draw=200
+
+  0%|          | 0.00/100 [00:00<?, ?audios/s]  0%|          | 0.00/100 [2:42:17<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, FAKEBOB robust acc: =100.0000%]  1%|          | 1.00/100 [2:42:17<267:47:15, 9.74ks/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, FAKEBOB robust acc: =100.0000%]  2%|▏         | 2.00/100 [5:24:29<265:04:57, 9.74ks/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, FAKEBOB robust acc: =100.0000%]  3%|▎         | 3.00/100 [5:24:29<165:08:29, 6.13ks/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, FAKEBOB robust acc: =100.0000%]

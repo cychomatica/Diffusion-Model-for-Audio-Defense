@@ -35,19 +35,19 @@ if __name__ == '__main__':
 
     '''attack arguments'''
     parser.add_argument('--attack', type=str, choices=['CW', 'Qin-I', 'Kenansville', 'FAKEBOB', 'SirenAttack'], default='CW')
-    parser.add_argument('--defense', type=str, choices=['Diffusion', 'AS', 'MS', 'DS', 'LPF', 'BPF', 'FeCo', 'None'], default='None')
+    parser.add_argument('--defense', type=str, choices=['Diffusion', 'AS', 'MS', 'DS', 'LPF', 'BPF', 'FeCo', 'None'], default='BPF')
     parser.add_argument('--bound_norm', type=str, choices=['linf', 'l2'], default='linf')
     parser.add_argument('--eps', type=int, default=65)
     parser.add_argument('--max_iter_1', type=int, default=10)
     parser.add_argument('--max_iter_2', type=int, default=0)
     parser.add_argument('--eot_attack_size', type=int, default=1)
     parser.add_argument('--eot_defense_size', type=int, default=1)
-    parser.add_argument('--verbose', type=int, default=0)
+    parser.add_argument('--verbose', type=int, default=1)
 
     '''device arguments'''
     parser.add_argument("--dataload_workers_nums", type=int, default=8, help='number of workers for dataloader')
     parser.add_argument("--batch_size", type=int, default=20, help='batch size')
-    parser.add_argument('--gpu', type=int, default=1)
+    parser.add_argument('--gpu', type=int, default=0)
 
     '''file saving arguments'''
     parser.add_argument('--save_path', default=None)
@@ -191,7 +191,7 @@ if __name__ == '__main__':
         eps = 0.002 #args.eps / (2**15)
         confidence = 0.5
         max_iter = 200
-        samples_per_draw = 50
+        samples_per_draw = 200
         Attacker = FAKEBOB(model=AS_MODEL, task='SCR', targeted=False, verbose=args.verbose,
                            confidence=confidence, epsilon=eps, max_lr=5e-4, min_lr=1e-4,
                            max_iter=max_iter, samples_per_draw=samples_per_draw, batch_size=args.batch_size)
