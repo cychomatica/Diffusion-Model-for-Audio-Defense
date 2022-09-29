@@ -6,3 +6,9 @@
 *.wav
 test.sh
 environment.yml
+sde_toy.py
+parallel_certified_robustness_eval.py
+fakebob_eval.py
+model_stealing.py
+/_Spec_Samples
+/_Experiments

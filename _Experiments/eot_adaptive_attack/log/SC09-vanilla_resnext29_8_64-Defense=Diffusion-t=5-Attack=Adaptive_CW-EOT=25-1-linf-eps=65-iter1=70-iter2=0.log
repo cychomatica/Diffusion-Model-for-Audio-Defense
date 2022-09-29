@@ -1,11 +1,0 @@
-use_gpu True
-gpu id: 1
-model_config: configs/config.json
-t: 5, rand_t: False, t_delta: 15
-use_bm: False
-classifier model: CifarResNeXt
-classifier type: vanilla
-defense: RevDiffWave with t=5
-attack: CW with linf_eps=65 & iter=70 & eot=25-1
-
-  0%|          | 0/100 [00:00<?, ?audios/s]  0%|          | 0/100 [11:09:15<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =94.0000%, CW robust acc: =80.0000%] 50%|█████     | 50/100 [11:09:15<11:09:15, 803.10s/audios, orig clean acc: =100.0000%, denoised clean acc: =94.0000%, CW robust acc: =80.0000%]

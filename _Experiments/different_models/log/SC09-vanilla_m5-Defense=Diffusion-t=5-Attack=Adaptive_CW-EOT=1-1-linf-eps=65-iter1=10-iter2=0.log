@@ -1,11 +1,0 @@
-use_gpu True
-gpu id: 0
-model_config: configs/config.json
-t: 5, rand_t: False, t_delta: 15
-use_bm: False
-classifier model: M5
-classifier type: vanilla
-defense: RevDiffWave with t=5
-attack: CW with linf_eps=65 & iter=10 & eot=1-1
-
-  0%|          | 0/100 [00:00<?, ?audios/s]

@@ -728,272 +728,272 @@ class AudioAttack():
         return x_padded, x_mask
 
 
-'''Black-box Attack'''
+# '''Black-box Attack'''
 
-class SquareAttack():
+# class SquareAttack():
 
-    def __init__(
-        self,
-        model: torch.nn.Module, 
-        eps, 
-        norm, 
-        n_iter, 
-        p_init
-        ) -> None:
+#     def __init__(
+#         self,
+#         model: torch.nn.Module, 
+#         eps, 
+#         norm, 
+#         n_iter, 
+#         p_init
+#         ) -> None:
         
-        self.model = model
-        self.eps = eps
-        self.norm = norm
-        self.n_iter = n_iter
-        self.p_init = p_init
-        # self._targeted = False
+#         self.model = model
+#         self.eps = eps
+#         self.norm = norm
+#         self.n_iter = n_iter
+#         self.p_init = p_init
+#         # self._targeted = False
     
-    def loss(self, y: torch.Tensor, logits: torch.Tensor, targeted: bool=False, loss_type: str='margin'):
+#     def loss(self, y: torch.Tensor, logits: torch.Tensor, targeted: bool=False, loss_type: str='margin'):
 
-        if loss_type == 'margin':
-            preds_correct_class = (logits * y).sum(1, keepdims=True)
-            diff = preds_correct_class - logits  # difference between the correct class and all other classes
-            diff[y] = torch.inf  # to exclude zeros coming from f_correct - f_correct
-            margin = diff.min(1, keepdims=True)
-            loss = margin * -1 if targeted else margin
-        elif loss_type == 'cross_entropy':
-            probs = torch.nn.Softmax(dim=1)(logits)
-            loss = -torch.log(probs[y])
-            loss = loss * -1 if not targeted else loss
-        else:
-            raise NotImplementedError(f'Unsupported loss type: {loss_type}!')
+#         if loss_type == 'margin':
+#             preds_correct_class = (logits * y).sum(1, keepdims=True)
+#             diff = preds_correct_class - logits  # difference between the correct class and all other classes
+#             diff[y] = torch.inf  # to exclude zeros coming from f_correct - f_correct
+#             margin = diff.min(1, keepdims=True)
+#             loss = margin * -1 if targeted else margin
+#         elif loss_type == 'cross_entropy':
+#             probs = torch.nn.Softmax(dim=1)(logits)
+#             loss = -torch.log(probs[y])
+#             loss = loss * -1 if not targeted else loss
+#         else:
+#             raise NotImplementedError(f'Unsupported loss type: {loss_type}!')
 
-        return loss.flatten()
+#         return loss.flatten()
 
-    def p_selection(self, p_init, it, n_iters):
-        """ Piece-wise constant schedule for p (the fraction of pixels changed on every iteration). """
-        it = int(it / n_iters * 10000)
+#     def p_selection(self, p_init, it, n_iters):
+#         """ Piece-wise constant schedule for p (the fraction of pixels changed on every iteration). """
+#         it = int(it / n_iters * 10000)
 
-        if 10 < it <= 50:
-            p = p_init / 2
-        elif 50 < it <= 200:
-            p = p_init / 4
-        elif 200 < it <= 500:
-            p = p_init / 8
-        elif 500 < it <= 1000:
-            p = p_init / 16
-        elif 1000 < it <= 2000:
-            p = p_init / 32
-        elif 2000 < it <= 4000:
-            p = p_init / 64
-        elif 4000 < it <= 6000:
-            p = p_init / 128
-        elif 6000 < it <= 8000:
-            p = p_init / 256
-        elif 8000 < it <= 10000:
-            p = p_init / 512
-        else:
-            p = p_init
+#         if 10 < it <= 50:
+#             p = p_init / 2
+#         elif 50 < it <= 200:
+#             p = p_init / 4
+#         elif 200 < it <= 500:
+#             p = p_init / 8
+#         elif 500 < it <= 1000:
+#             p = p_init / 16
+#         elif 1000 < it <= 2000:
+#             p = p_init / 32
+#         elif 2000 < it <= 4000:
+#             p = p_init / 64
+#         elif 4000 < it <= 6000:
+#             p = p_init / 128
+#         elif 6000 < it <= 8000:
+#             p = p_init / 256
+#         elif 8000 < it <= 10000:
+#             p = p_init / 512
+#         else:
+#             p = p_init
 
-        return 
+#         return 
     
-    def generate(self, x: torch.Tensor, y: torch.Tensor, targeted: bool=False, p_init: float=0.1):
+#     def generate(self, x: torch.Tensor, y: torch.Tensor, targeted: bool=False, p_init: float=0.1):
 
-        assert x.ndim == 3
+#         assert x.ndim == 3
 
-        min_val, max_val = -1, 1
-        n_features = x.shape[1] * x.shape[2]
-        n_ex_total = x.shape[0]
-        # x, y = x[corr_classified], y[corr_classified]
+#         min_val, max_val = -1, 1
+#         n_features = x.shape[1] * x.shape[2]
+#         n_ex_total = x.shape[0]
+#         # x, y = x[corr_classified], y[corr_classified]
 
-        # init_delta = np.random.choice([-self.eps, self.eps], size=x.shape)
-        init_delta = (2 * torch.randint_like(x,1) - 1) * self.eps
-        x_best = (x + init_delta).clamp(min_val, max_val)
-        logits = self.model(x_best)
+#         # init_delta = np.random.choice([-self.eps, self.eps], size=x.shape)
+#         init_delta = (2 * torch.randint_like(x,1) - 1) * self.eps
+#         x_best = (x + init_delta).clamp(min_val, max_val)
+#         logits = self.model(x_best)
 
-        if not targeted:
-            loss_type = 'margin'
-        else:
-            loss_type = 'cross_entropy'
-        loss_min = self.loss(y, logits, targeted, loss_type).detach().cpu().numpy()
-        margin_min = self.loss(y, logits, targeted, 'margin').detach().cpu().numpy()
-        n_queries = np.ones(x.shape[0])  # ones because we have already used 1 query
+#         if not targeted:
+#             loss_type = 'margin'
+#         else:
+#             loss_type = 'cross_entropy'
+#         loss_min = self.loss(y, logits, targeted, loss_type).detach().cpu().numpy()
+#         margin_min = self.loss(y, logits, targeted, 'margin').detach().cpu().numpy()
+#         n_queries = np.ones(x.shape[0])  # ones because we have already used 1 query
 
-        time_start = time.time()
-        metrics = np.zeros([self.n_iter, 7])
+#         time_start = time.time()
+#         metrics = np.zeros([self.n_iter, 7])
 
-        for i_iter in range(self.n_iter - 1):
-            idx_to_fool = margin_min > 0
-            x_curr, x_best_curr, y_curr = x[idx_to_fool], x_best[idx_to_fool], y[idx_to_fool]
-            loss_min_curr, margin_min_curr = loss_min[idx_to_fool], margin_min[idx_to_fool]
-            delta = x_best_curr - x_curr
+#         for i_iter in range(self.n_iter - 1):
+#             idx_to_fool = margin_min > 0
+#             x_curr, x_best_curr, y_curr = x[idx_to_fool], x_best[idx_to_fool], y[idx_to_fool]
+#             loss_min_curr, margin_min_curr = loss_min[idx_to_fool], margin_min[idx_to_fool]
+#             delta = x_best_curr - x_curr
 
-            p = self.p_selection(p_init, i_iter, self.n_iter)
+#             p = self.p_selection(p_init, i_iter, self.n_iter)
 
-            for i in range(x_best_curr.shape[0]):
-                s = int(round(np.sqrt(p * n_features)))
-                s = min(max(s, 1), x.shape[2]-1)  # at least 1 x 1 window is taken and at most 1 x length-1
-                center_l = np.random.randint(0, x.shape[2] - s)
+#             for i in range(x_best_curr.shape[0]):
+#                 s = int(round(np.sqrt(p * n_features)))
+#                 s = min(max(s, 1), x.shape[2]-1)  # at least 1 x 1 window is taken and at most 1 x length-1
+#                 center_l = np.random.randint(0, x.shape[2] - s)
 
-                x_curr_window = x_curr[i, :, center_l:center_l+s]
-                x_best_curr_window = x_best_curr[i, :, center_l:center_l+s]
+#                 x_curr_window = x_curr[i, :, center_l:center_l+s]
+#                 x_best_curr_window = x_best_curr[i, :, center_l:center_l+s]
 
-                # prevent trying out a delta if it doesn't change x_curr (e.g. an overlapping patch)
-                while torch.sum(torch.abs((x_curr_window + delta[i, :, center_l:center_l+s]).clamp(min_val, max_val) - x_best_curr_window) < 10**-7) == s:
-                    delta[i, :, center_l:center_l+s] = (2 * torch.randint(0,1,[1,1]) - 1) * self.eps
+#                 # prevent trying out a delta if it doesn't change x_curr (e.g. an overlapping patch)
+#                 while torch.sum(torch.abs((x_curr_window + delta[i, :, center_l:center_l+s]).clamp(min_val, max_val) - x_best_curr_window) < 10**-7) == s:
+#                     delta[i, :, center_l:center_l+s] = (2 * torch.randint(0,1,[1,1]) - 1) * self.eps
             
-            x_new = (x_curr + delta).clamp(min_val, max_val)
-            logits = self.model(x_new)
-            loss = self.loss(y, logits, targeted, loss_type).detach().cpu().numpy()
-            margin = self.loss(y, logits, targeted, 'margin').detach().cpu().numpy()
+#             x_new = (x_curr + delta).clamp(min_val, max_val)
+#             logits = self.model(x_new)
+#             loss = self.loss(y, logits, targeted, loss_type).detach().cpu().numpy()
+#             margin = self.loss(y, logits, targeted, 'margin').detach().cpu().numpy()
 
-            idx_improved = loss < loss_min_curr
-            loss_min[idx_to_fool] = idx_improved * loss + ~idx_improved * loss_min_curr
-            margin_min[idx_to_fool] = idx_improved * margin + ~idx_improved * margin_min_curr
+#             idx_improved = loss < loss_min_curr
+#             loss_min[idx_to_fool] = idx_improved * loss + ~idx_improved * loss_min_curr
+#             margin_min[idx_to_fool] = idx_improved * margin + ~idx_improved * margin_min_curr
 
-            idx_improved =idx_improved.reshape([-1, *[1]*len(x.shape[:-1])])
-            x_best[idx_to_fool] = idx_improved * x_new + ~idx_improved * x_best_curr
-            n_queries[idx_to_fool] += 1
+#             idx_improved =idx_improved.reshape([-1, *[1]*len(x.shape[:-1])])
+#             x_best[idx_to_fool] = idx_improved * x_new + ~idx_improved * x_best_curr
+#             n_queries[idx_to_fool] += 1
 
-            acc = (margin_min > 0.0).sum() / n_ex_total
-            acc_corr = (margin_min > 0.0).mean()
-            mean_nq, mean_nq_ae, median_nq_ae = np.mean(n_queries), np.mean(n_queries[margin_min <= 0]), np.median(n_queries[margin_min <= 0])
-            avg_margin_min = np.mean(margin_min)
-            time_total = time.time() - time_start
-            print('{}: acc={:.2%} acc_corr={:.2%} avg#q_ae={:.2f} med#q={:.1f}, avg_margin={:.2f} (n_ex={}, eps={:.3f}, {:.2f}s)'\
-                .format(i_iter+1, acc, acc_corr, mean_nq_ae, median_nq_ae, avg_margin_min, x.shape[0], self.eps, time_total))
+#             acc = (margin_min > 0.0).sum() / n_ex_total
+#             acc_corr = (margin_min > 0.0).mean()
+#             mean_nq, mean_nq_ae, median_nq_ae = np.mean(n_queries), np.mean(n_queries[margin_min <= 0]), np.median(n_queries[margin_min <= 0])
+#             avg_margin_min = np.mean(margin_min)
+#             time_total = time.time() - time_start
+#             print('{}: acc={:.2%} acc_corr={:.2%} avg#q_ae={:.2f} med#q={:.1f}, avg_margin={:.2f} (n_ex={}, eps={:.3f}, {:.2f}s)'\
+#                 .format(i_iter+1, acc, acc_corr, mean_nq_ae, median_nq_ae, avg_margin_min, x.shape[0], self.eps, time_total))
             
-            metrics[i_iter] = [acc, acc_corr, mean_nq, mean_nq_ae, median_nq_ae, margin_min.mean(), time_total]
-            # if (i_iter <= 500 and i_iter % 20 == 0) or (i_iter > 100 and i_iter % 50 == 0) or i_iter + 1 == self.n_iter or acc == 0:
-            #     np.save(metrics_path, metrics)
-            # if acc == 0:
-            #     break
+#             metrics[i_iter] = [acc, acc_corr, mean_nq, mean_nq_ae, median_nq_ae, margin_min.mean(), time_total]
+#             # if (i_iter <= 500 and i_iter % 20 == 0) or (i_iter > 100 and i_iter % 50 == 0) or i_iter + 1 == self.n_iter or acc == 0:
+#             #     np.save(metrics_path, metrics)
+#             # if acc == 0:
+#             #     break
 
-        return n_queries, x_best
+#         return n_queries, x_best
 
-from utils import MarginalLoss
-class LinfSPSA():
+# from utils import MarginalLoss
+# class LinfSPSA():
 
-    '''
-        SPSA Attack (Uesato et al. 2018).
-        Based on: https://arxiv.org/abs/1802.05666
-        :param predict: predict function (single argument: input).
-        :param eps: the L_inf budget of the attack.
-        :param delta: scaling parameter of SPSA.
-        :param lr: the learning rate of the `Adam` optimizer.
-        :param nb_iter: number of iterations of the attack.
-        :param nb_sample: number of samples for SPSA gradient approximation.
-        :param max_batch_size: maximum batch size to be evaluated at once.
-        :param targeted: [description]
-        :param loss_fn: loss function (dual arguments: output, target).
-        :param clip_min: upper bound of image values.
-        :param clip_max: lower bound of image values.
-    '''
+#     '''
+#         SPSA Attack (Uesato et al. 2018).
+#         Based on: https://arxiv.org/abs/1802.05666
+#         :param predict: predict function (single argument: input).
+#         :param eps: the L_inf budget of the attack.
+#         :param delta: scaling parameter of SPSA.
+#         :param lr: the learning rate of the `Adam` optimizer.
+#         :param nb_iter: number of iterations of the attack.
+#         :param nb_sample: number of samples for SPSA gradient approximation.
+#         :param max_batch_size: maximum batch size to be evaluated at once.
+#         :param targeted: [description]
+#         :param loss_fn: loss function (dual arguments: output, target).
+#         :param clip_min: upper bound of image values.
+#         :param clip_max: lower bound of image values.
+#     '''
 
-    def __init__(self,
-                model: torch.nn.Module,
-                transform = None, 
-                defender = None, 
-                criterion: "_Loss" = MarginalLoss(),  
-                eps: float = 2000.0,
-                learning_rate: float = 100.0,
-                max_iter: int = 1000,
-                delta: float = 0.01,
-                ) -> None:
+#     def __init__(self,
+#                 model: torch.nn.Module,
+#                 transform = None, 
+#                 defender = None, 
+#                 criterion: "_Loss" = MarginalLoss(),  
+#                 eps: float = 2000.0,
+#                 learning_rate: float = 100.0,
+#                 max_iter: int = 1000,
+#                 delta: float = 0.01,
+#                 ) -> None:
         
-        self.model = model
-        self.transform = transform
-        self.defender = defender
-        self.criterion = criterion
+#         self.model = model
+#         self.transform = transform
+#         self.defender = defender
+#         self.criterion = criterion
 
-        self.eps = eps
-        self.learning_rate = learning_rate
-        self.max_iter = max_iter
-        self.delta = delta
+#         self.eps = eps
+#         self.learning_rate = learning_rate
+#         self.max_iter = max_iter
+#         self.delta = delta
 
-        self._targeted = True
+#         self._targeted = True
 
-        self.scale_factor = 2**-15
+#         self.scale_factor = 2**-15
     
      
-    def generate(self, 
-                x: Union[torch.Tensor, np.ndarray], 
-                y: Union[torch.Tensor, np.ndarray], 
-                targeted: bool=True, 
-                num_samples: int=512):
+#     def generate(self, 
+#                 x: Union[torch.Tensor, np.ndarray], 
+#                 y: Union[torch.Tensor, np.ndarray], 
+#                 targeted: bool=True, 
+#                 num_samples: int=512):
         
-        self._targeted = targeted
+#         self._targeted = targeted
 
-        '''convert np.array to torch.tensor'''
-        if isinstance(x, np.ndarray): 
-            x = torch.from_numpy(x)
-        if isinstance(y, np.ndarray): 
-            y = torch.from_numpy(y)
+#         '''convert np.array to torch.tensor'''
+#         if isinstance(x, np.ndarray): 
+#             x = torch.from_numpy(x)
+#         if isinstance(y, np.ndarray): 
+#             y = torch.from_numpy(y)
         
-        x_adv = self.spsa_perturb(x, y, num_samples)
+#         x_adv = self.spsa_perturb(x, y, num_samples)
 
-        return x_adv
+#         return x_adv
 
-    def spsa_perturb(self, x: torch.Tensor, y: torch.Tensor, num_samples: int=64):
+#     def spsa_perturb(self, x: torch.Tensor, y: torch.Tensor, num_samples: int=64):
 
-        dx = torch.zeros_like(x)
-        dx.grad = torch.zeros_like(dx)
+#         dx = torch.zeros_like(x)
+#         dx.grad = torch.zeros_like(dx)
 
-        if x.dtype == torch.float32:
-            eps = self.scale_factor * self.eps
-            lr = self.scale_factor * self.learning_rate
-        else: 
-            eps = self.eps
-            lr = self.learning_rate
+#         if x.dtype == torch.float32:
+#             eps = self.scale_factor * self.eps
+#             lr = self.scale_factor * self.learning_rate
+#         else: 
+#             eps = self.eps
+#             lr = self.learning_rate
 
-        optimizer = torch.optim.Adam([dx], lr=lr)
+#         optimizer = torch.optim.Adam([dx], lr=lr)
 
-        for i in range(self.max_iter):
+#         for i in range(self.max_iter):
 
-            optimizer.zero_grad()
-            if self._targeted:
-                dx.grad = self.spsa_grad(x, y, num_samples)
-            else: 
-                dx.grad = -self.spsa_grad(x, y, num_samples)
-            optimizer.step()
-            dx = dx.clamp(-eps, eps)
+#             optimizer.zero_grad()
+#             if self._targeted:
+#                 dx.grad = self.spsa_grad(x, y, num_samples)
+#             else: 
+#                 dx.grad = -self.spsa_grad(x, y, num_samples)
+#             optimizer.step()
+#             dx = dx.clamp(-eps, eps)
 
-        x_adv = x + dx
-        return x_adv
+#         x_adv = x + dx
+#         return x_adv
 
-    @torch.no_grad()
-    def predict(self, x: Union[torch.Tensor, np.ndarray]):
+#     @torch.no_grad()
+#     def predict(self, x: Union[torch.Tensor, np.ndarray]):
 
-        '''convert np.array to torch.tensor'''
-        if isinstance(x, np.ndarray): 
-            x = torch.from_numpy(x)
+#         '''convert np.array to torch.tensor'''
+#         if isinstance(x, np.ndarray): 
+#             x = torch.from_numpy(x)
 
-        if self.defender is not None:
-            x = self.defender(x, grad_enable=False)
-        if self.transform is not None:
-            x = self.transform(x)
-        y = self.model(x)
+#         if self.defender is not None:
+#             x = self.defender(x, grad_enable=False)
+#         if self.transform is not None:
+#             x = self.transform(x)
+#         y = self.model(x)
 
-        return y
+#         return y
     
-    @torch.no_grad()
-    def spsa_grad(self, x: torch.Tensor, y: torch.Tensor, num_samples: int=512, batch_size: int=16):      
+#     @torch.no_grad()
+#     def spsa_grad(self, x: torch.Tensor, y: torch.Tensor, num_samples: int=512, batch_size: int=16):      
         
-        batches = [batch_size for _ in range(num_samples // batch_size)]
-        if num_samples % batch_size:
-            batches.append(num_samples % batch_size)
+#         batches = [batch_size for _ in range(num_samples // batch_size)]
+#         if num_samples % batch_size:
+#             batches.append(num_samples % batch_size)
 
-        grad = torch.zeros_like(x)
+#         grad = torch.zeros_like(x)
 
-        for batch in batches:
+#         for batch in batches:
 
-            x_batch = x.repeat(batch, 1, 1)
-            y_batch = y.repeat(batch)
-            v = torch.empty_like(x_batch)
-            v = v.bernoulli_().mul_(2.0).sub_(1.0)
+#             x_batch = x.repeat(batch, 1, 1)
+#             y_batch = y.repeat(batch)
+#             v = torch.empty_like(x_batch)
+#             v = v.bernoulli_().mul_(2.0).sub_(1.0)
 
 
-            df_n = self.criterion(self.predict(x_batch + self.delta * v), y_batch) \
-                - self.criterion(self.predict(x_batch - self.delta * v), y_batch)
-            grad_n = df_n / (2. * self.delta * v)
+#             df_n = self.criterion(self.predict(x_batch + self.delta * v), y_batch) \
+#                 - self.criterion(self.predict(x_batch - self.delta * v), y_batch)
+#             grad_n = df_n / (2. * self.delta * v)
 
-            grad = grad + sum(grad_n.split(x.shape[0], dim=0))
+#             grad = grad + sum(grad_n.split(x.shape[0], dim=0))
 
-        grad = grad / (num_samples * x.shape[0])
+#         grad = grad / (num_samples * x.shape[0])
 
-        return grad
+#         return grad

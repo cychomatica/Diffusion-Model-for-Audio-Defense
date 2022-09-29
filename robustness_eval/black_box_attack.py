@@ -71,15 +71,21 @@ class FAKEBOB():
                 loss, grad, adver_loss, _, y_pred = self.get_grad(adver_x, y_batch)
                 # y_pred = torch.max(scores, 1)[1].cpu().numpy()
 
-                for ii in range(n_audios):
+                # for ii in range(n_audios):
+                #     if (y_pred[ii] != y_batch[ii] and self.targeted == False) \
+                #         or (y_pred[ii] == y_batch[ii] and self.targeted == True):
+                #         success[ii] = True
+                for ii, adver_l in enumerate(adver_loss):
+
+                    index = consider_index[ii]
+
                     if (y_pred[ii] != y_batch[ii] and self.targeted == False) \
                         or (y_pred[ii] == y_batch[ii] and self.targeted == True):
-                        success[ii] = True
-                # for ii, adver_l in enumerate(adver_loss):
-                #     index = consider_index[ii]
-                #     if adver_l < best_loss[index]:
-                #         best_loss[index] = adver_l.cpu().item()
-                #         best_adver_x[index] = adver_x[ii]
+                        success[index] = True
+                        
+                    if adver_l < best_loss[index]:
+                        best_loss[index] = adver_l.cpu().item()
+                        best_adver_x[index] = adver_x[ii]
 
                 if self.verbose:
                     print("batch: {} iter: {}, loss: {}, y: {}, y_pred: {}, best loss: {}".format(
@@ -430,10 +436,10 @@ class SirenAttack():
                             gbest_location[index] = pbest_locations[kk, gbest_index[kk]]
                             gbest_predict[index] = predict[kk, gbest_index[kk]]
                     
-                    for pp in range(len(y_batch)):
-                        if (gbest_predict[consider_index][pp] != y_batch[pp] and self.targeted == False) \
-                            or (gbest_predict[consider_index][pp] == y_batch[pp] and self.targeted == True):
-                            success[pp] = True
+                    # for pp in range(len(y_batch)):
+                    #     if (gbest_predict[consider_index][pp] != y_batch[pp] and self.targeted == False) \
+                    #         or (gbest_predict[consider_index][pp] == y_batch[pp] and self.targeted == True):
+                    #         success[pp] = True
 
                     if self.verbose:
                         print('batch: {}, epoch: {}, iter: {}, y: {}, y_pred: {}, gbest: {}'.format(batch_id,
@@ -484,10 +490,10 @@ class SirenAttack():
                         # break
                     prev_gbest_epoch = gbests.clone()
             
-            # success = [False] * n_audios
-            # for kk, best_l in enumerate(gbests):
-            #     if best_l < 0:
-            #         success[kk] = True
+            success = [False] * n_audios
+            for kk, best_l in enumerate(gbests):
+                if best_l < 0:
+                    success[kk] = True
 
             return gbest_location + x_batch_clone, success
 

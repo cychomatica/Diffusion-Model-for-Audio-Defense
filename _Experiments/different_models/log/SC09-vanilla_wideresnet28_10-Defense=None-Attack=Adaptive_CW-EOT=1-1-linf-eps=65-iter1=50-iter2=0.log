@@ -1,13 +1,0 @@
-use_gpu True
-gpu id: 0
-classifier model: WideResNet
-classifier type: vanilla
-defense: None
-attack: CW with linf_eps=65 & iter=50 & eot=1-1
-
-  0%|          | 0/100 [00:00<?, ?audios/s]  0%|          | 0/100 [00:09<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =0.0000%] 50%|█████     | 50/100 [00:09<00:09,  5.27audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =0.0000%]Adversarial attack stage 1 for x_5 was not successful
-100%|██████████| 100/100 [00:16<00:00,  5.27audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =1.0000%]150audios [00:16,  9.72audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =1.0000%]                     100%|██████████| 100/100 [00:16<00:00,  5.95audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =1.0000%]
-on 100 test examples: 
-original clean test accuracy: 100.0000%
-denoised clean test accuracy: 100.0000%
-CW robust test accuracy: 1.0000%

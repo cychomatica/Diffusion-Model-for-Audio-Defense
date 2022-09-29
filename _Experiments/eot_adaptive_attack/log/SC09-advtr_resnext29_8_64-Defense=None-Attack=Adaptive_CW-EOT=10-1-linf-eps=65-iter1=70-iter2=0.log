@@ -1,12 +1,0 @@
-use_gpu True
-gpu id: 0
-classifier model: CifarResNeXt
-classifier type: advtr
-defense: None
-attack: CW with linf_eps=65 & iter=70 & eot=10-1
-
-  0%|          | 0/100 [00:00<?, ?audios/s]  0%|          | 0/100 [02:54<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =22.0000%] 50%|█████     | 50/100 [02:54<02:54,  3.50s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =22.0000%]100%|██████████| 100/100 [05:45<00:00,  3.50s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =22.0000%]150audios [05:45,  2.17s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =22.0000%]                     100%|██████████| 100/100 [05:45<00:00,  3.46s/audios, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =22.0000%]
-on 100 test examples: 
-original clean test accuracy: 100.0000%
-denoised clean test accuracy: 100.0000%
-CW robust test accuracy: 22.0000%

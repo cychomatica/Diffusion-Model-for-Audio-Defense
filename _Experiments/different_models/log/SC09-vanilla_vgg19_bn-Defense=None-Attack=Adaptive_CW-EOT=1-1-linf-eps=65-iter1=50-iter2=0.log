@@ -1,15 +1,0 @@
-use_gpu True
-gpu id: 0
-classifier model: VGG
-classifier type: vanilla
-defense: None
-attack: CW with linf_eps=65 & iter=50 & eot=1-1
-
-  0%|          | 0/100 [00:00<?, ?audios/s]Adversarial attack stage 1 for x_5 was not successful
-  0%|          | 0/100 [00:02<?, ?audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =2.0000%] 50%|█████     | 50/100 [00:02<00:02, 21.01audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =2.0000%]Adversarial attack stage 1 for x_5 was not successful
-Adversarial attack stage 1 for x_22 was not successful
-100%|██████████| 100/100 [00:03<00:00, 21.01audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =3.0000%]150audios [00:03, 51.30audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =3.0000%]                     100%|██████████| 100/100 [00:03<00:00, 29.18audios/s, orig clean acc: =100.0000%, denoised clean acc: =100.0000%, CW robust acc: =3.0000%]
-on 100 test examples: 
-original clean test accuracy: 100.0000%
-denoised clean test accuracy: 100.0000%
-CW robust test accuracy: 3.0000%

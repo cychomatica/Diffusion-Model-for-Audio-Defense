@@ -289,9 +289,9 @@ def atk_bst(data, fs, og_label, targeted, raster_width, models, attack, max_allo
         if(complete): break
 
     # f_label, scores_f = _model.make_decision(torch.from_numpy(mistranscribed_audio.astype(np.float32)).to(device).unsqueeze(0).unsqueeze(1))
-    scores_f = _model(torch.from_numpy(mistranscribed_audio.astype(np.float32)).to(device).unsqueeze(0).unsqueeze(1))
-    f_label = scores_f.max(1, keepdim=True)[1]
+    # scores_f = _model(torch.from_numpy(mistranscribed_audio.astype(np.float32)).to(device).unsqueeze(0).unsqueeze(1))
+    # f_label = scores_f.max(1, keepdim=True)[1]
 
-    succ = ((f_label != og_label and not targeted) or (f_label == og_label and targeted))
+    # succ = ((f_label != og_label and not targeted) or (f_label == og_label and targeted))
     # print(f_label_1, f_label, scores_1, scores_f)
     return mistranscribed_audio.ravel(), succ

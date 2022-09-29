@@ -1,6 +1,5 @@
 import argparse
 import json
-from re import X
 
 import torch
 from .DiffWave_Unconditional.dataset import load_Speech_commands
@@ -9,6 +8,10 @@ from .DiffWave_Unconditional.util import calc_diffusion_hyperparams
 
 import numpy as np
 from typing import Union
+
+# import sys
+# sys.path.insert(0, './')
+# import utils
 
 class DiffWave(torch.nn.Module):
 
@@ -36,14 +39,14 @@ class DiffWave(torch.nn.Module):
             waveforms = torch.from_numpy(waveforms)
         
         # with torch.no_grad():
-        output = self.diffusion(waveforms)
-            # output = self.reverse(output)
-        output = self.one_shot_denoise(output)
+        output = self._diffusion(waveforms)
+        output = self.reverse(output)
+        # output = self.one_shot_denoise(output)
         # output = self.fast_reverse(output)
 
         return output
 
-    def diffusion(self, x_0: Union[torch.Tensor, np.ndarray]) -> torch.Tensor: 
+    def _diffusion(self, x_0: Union[torch.Tensor, np.ndarray]) -> torch.Tensor: 
         
         '''convert np.array to torch.tensor'''
         if isinstance(x_0, np.ndarray): 
@@ -59,13 +62,17 @@ class DiffWave(torch.nn.Module):
         assert x_0.ndim == 3
 
         '''noising'''
-        # with torch.no_grad():
-        z = torch.normal(0, 1, size=x_0.shape).cuda()
-        x_t = torch.sqrt(Alpha_bar[self.reverse_timestep-1]).cuda() * x_0 + torch.sqrt(1-Alpha_bar[self.reverse_timestep-1]).cuda() * z
-
+        with torch.no_grad():
+            z = torch.normal(0, 1, size=x_0.shape).cuda()
+            x_t = torch.sqrt(Alpha_bar[self.reverse_timestep-1]).cuda() * x_0 + torch.sqrt(1-Alpha_bar[self.reverse_timestep-1]).cuda() * z
+            # x_t = x_0
+            # for t in range(0, self.reverse_timestep):
+            #     z = torch.normal(0, 1, size=x_0.shape).cuda()
+            #     x_t = torch.sqrt(Alpha[t]).cuda() * x_0 + torch.sqrt(1-Alpha[t]).cuda() * z
+            #     utils.audio_save_as_img(x_t[0], name='wave_adv_diff_{}.png'.format(t+1))
         return x_t
 
-    def reverse(self, x_t: Union[torch.Tensor, np.ndarray]) -> torch.Tensor: 
+    def _reverse(self, x_t: Union[torch.Tensor, np.ndarray]) -> torch.Tensor: 
 
         '''convert np.array to torch.tensor'''
         if isinstance(x_t, np.ndarray): 
@@ -93,7 +100,7 @@ class DiffWave(torch.nn.Module):
                     x_t_rev = mu_theta_t + sigma_thata_t * torch.normal(0, 1, size=x_t_rev.shape).cuda()
                 else:
                     x_t_rev = mu_theta_t
-
+                # utils.audio_save_as_img(x_t_rev[0], name='wave_adv_rev_{}.png'.format(t))
         return x_t_rev
     
     def fast_reverse(self, x_t: Union[torch.Tensor, np.ndarray]) -> torch.Tensor: 

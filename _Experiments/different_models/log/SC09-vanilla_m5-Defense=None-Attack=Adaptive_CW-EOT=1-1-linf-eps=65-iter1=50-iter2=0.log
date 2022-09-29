@@ -1,24 +1,0 @@
-use_gpu True
-gpu id: 0
-classifier model: M5
-classifier type: vanilla
-defense: None
-attack: CW with linf_eps=65 & iter=50 & eot=1-1
-
-  0%|          | 0/100 [00:00<?, ?audios/s]Adversarial attack stage 1 for x_4 was not successful
-Adversarial attack stage 1 for x_5 was not successful
-Adversarial attack stage 1 for x_14 was not successful
-Adversarial attack stage 1 for x_15 was not successful
-Adversarial attack stage 1 for x_45 was not successful
-Adversarial attack stage 1 for x_46 was not successful
-Adversarial attack stage 1 for x_47 was not successful
-  0%|          | 0/100 [00:01<?, ?audios/s, orig clean acc: =94.0000%, denoised clean acc: =94.0000%, CW robust acc: =14.0000%] 50%|█████     | 50/100 [00:01<00:01, 33.70audios/s, orig clean acc: =94.0000%, denoised clean acc: =94.0000%, CW robust acc: =14.0000%]Adversarial attack stage 1 for x_1 was not successful
-Adversarial attack stage 1 for x_5 was not successful
-Adversarial attack stage 1 for x_15 was not successful
-Adversarial attack stage 1 for x_23 was not successful
-Adversarial attack stage 1 for x_26 was not successful
-100%|██████████| 100/100 [00:01<00:00, 33.70audios/s, orig clean acc: =94.0000%, denoised clean acc: =94.0000%, CW robust acc: =12.0000%]150audios [00:01, 95.18audios/s, orig clean acc: =94.0000%, denoised clean acc: =94.0000%, CW robust acc: =12.0000%]                     100%|██████████| 100/100 [00:01<00:00, 51.43audios/s, orig clean acc: =94.0000%, denoised clean acc: =94.0000%, CW robust acc: =12.0000%]
-on 100 test examples: 
-original clean test accuracy: 94.0000%
-denoised clean test accuracy: 94.0000%
-CW robust test accuracy: 12.0000%
