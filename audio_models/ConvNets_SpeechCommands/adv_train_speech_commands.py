@@ -172,7 +172,7 @@ def pgd(model: torch.nn.Module,
         loss = criterion(y_pert, y)
         loss.backward()
 
-        delta.data = (delta.data + alpha * delta.grad.data).clamp(-eps, eps)
+        delta.data = (delta.data + alpha * delta.grad.data.sign()).clamp(-eps, eps)
         delta.data = (x + delta.data).clamp(-1, 1) - x
     
     for j in range(batch_size):
@@ -220,9 +220,9 @@ def train(epoch):
             inputs = inputs.cuda()
             targets = targets.cuda(non_blocking=True)
         
-        # inputs = pgd(model, inputs, targets, criterion)
+        inputs = pgd(model, inputs, targets, criterion)
         # inputs = gaussian_aug(inputs, sigma=args.sigma)
-        inputs = inputs + args.sigma * torch.randn_like(inputs)
+        # inputs = inputs + args.sigma * torch.randn_like(inputs)
 
         # forward/backward
         outputs = model(Wave2Spect(inputs))
@@ -285,7 +285,8 @@ def valid(epoch):
             inputs = inputs.cuda()
             targets = targets.cuda(non_blocking=True)
         
-        inputs = inputs + args.sigma * torch.randn_like(inputs)
+        inputs = pgd(model, inputs, targets, criterion)
+        # inputs = inputs + args.sigma * torch.randn_like(inputs)
 
         # forward
         outputs = model(Wave2Spect(inputs))
@@ -311,7 +312,7 @@ def valid(epoch):
     epoch_loss = running_loss / it
 
     print('\nepoch {}'.format(epoch))
-    print('val_accuracy: {}\t val_loss: {}\n'.format(accuracy, epoch_loss))
+    print('val_robust_accuracy: {}\t val_robust_loss: {}\n'.format(accuracy, epoch_loss))
     # writer.add_scalar('%s/accuracy' % phase, 100*accuracy, epoch)
     # writer.add_scalar('%s/epoch_loss' % phase, epoch_loss, epoch)
 
@@ -324,20 +325,21 @@ def valid(epoch):
         'optimizer' : optimizer.state_dict(),
     }
 
-    save_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/gaussian_aug_{}'.format(full_name)
+    # save_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/gaussian_aug_{}'.format(full_name)
+    save_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/{}'.format(full_name)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
     if accuracy > best_accuracy:
         best_accuracy = accuracy
-        torch.save(checkpoint, os.path.join(save_path, 'sigma={}-best-loss-speech-commands-checkpoint.pth').format(args.sigma))
-        torch.save(model, os.path.join(save_path, 'sigma={}-best-loss.pth'.format(args.sigma)))
+        torch.save(checkpoint, os.path.join(save_path, 'advtr-best-robust-loss-speech-commands-checkpoint.pth'))
+        torch.save(model, os.path.join(save_path, 'advtr-best-robust-loss.pth'))
     if epoch_loss < best_loss:
         best_loss = epoch_loss
-        torch.save(checkpoint, os.path.join(save_path, 'sigma={}-best-acc-speech-commands-checkpoint.pth').format(args.sigma))
-        torch.save(model, os.path.join(save_path, 'sigma={}-best-acc.pth'.format(args.sigma)))
+        torch.save(checkpoint, os.path.join(save_path, 'advtr-best-robust-acc-speech-commands-checkpoint.pth'))
+        torch.save(model, os.path.join(save_path, 'advtr-best-robust-acc.pth'))
 
-    torch.save(checkpoint, os.path.join(save_path, 'sigma={}-last-speech-commands-checkpoint.pth'.format(args.sigma)))
+    torch.save(checkpoint, os.path.join(save_path, 'advtr-last-speech-commands-checkpoint.pth'))
     del checkpoint  # reduce memory
 
     return epoch_loss
@@ -356,5 +358,5 @@ for epoch in range(start_epoch, args.max_epochs):
 
     time_elapsed = time.time() - since
     time_str = 'total time elapsed: {:.0f}h {:.0f}m {:.0f}s '.format(time_elapsed // 3600, time_elapsed % 3600 // 60, time_elapsed % 60)
-    print("%s, best accuracy: %.02f%%, best loss %f" % (time_str, 100*best_accuracy, best_loss))
+    print("%s, best robust accuracy: %.02f%%, best robust loss %f" % (time_str, 100*best_accuracy, best_loss))
 print("finished")

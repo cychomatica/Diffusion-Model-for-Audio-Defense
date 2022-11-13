@@ -2,7 +2,7 @@ import argparse
 import json
 
 import torch
-from .DiffWave_Unconditional.dataset import load_Speech_commands
+from .DiffWave_Unconditional.dataset import load_Qualcomm_keyword
 from .DiffWave_Unconditional.WaveNet import WaveNet_Speech_Commands
 from .DiffWave_Unconditional.util import calc_diffusion_hyperparams
 
@@ -40,7 +40,7 @@ class DiffWave(torch.nn.Module):
         
         # with torch.no_grad():
         output = self._diffusion(waveforms)
-        output = self.reverse(output)
+        output = self._reverse(output)
         # output = self.one_shot_denoise(output)
         # output = self.fast_reverse(output)
 
@@ -62,9 +62,9 @@ class DiffWave(torch.nn.Module):
         assert x_0.ndim == 3
 
         '''noising'''
-        with torch.no_grad():
-            z = torch.normal(0, 1, size=x_0.shape).cuda()
-            x_t = torch.sqrt(Alpha_bar[self.reverse_timestep-1]).cuda() * x_0 + torch.sqrt(1-Alpha_bar[self.reverse_timestep-1]).cuda() * z
+        # with torch.no_grad():
+        z = torch.normal(0, 1, size=x_0.shape).cuda()
+        x_t = torch.sqrt(Alpha_bar[self.reverse_timestep-1]).cuda() * x_0 + torch.sqrt(1-Alpha_bar[self.reverse_timestep-1]).cuda() * z
             # x_t = x_0
             # for t in range(0, self.reverse_timestep):
             #     z = torch.normal(0, 1, size=x_0.shape).cuda()
@@ -89,17 +89,17 @@ class DiffWave(torch.nn.Module):
 
         '''denoising'''
         x_t_rev = x_t.clone()
-        with torch.no_grad():
+        # with torch.no_grad():
 
         # compute x_t-1 from x_t
-            for t in range(self.reverse_timestep-1, -1, -1):
+        for t in range(self.reverse_timestep-1, -1, -1):
 
-                epsilon_theta_t, mu_theta_t, sigma_thata_t = self.compute_coefficients(x_t_rev, t)
+            epsilon_theta_t, mu_theta_t, sigma_thata_t = self.compute_coefficients(x_t_rev, t)
 
-                if t > 0:
-                    x_t_rev = mu_theta_t + sigma_thata_t * torch.normal(0, 1, size=x_t_rev.shape).cuda()
-                else:
-                    x_t_rev = mu_theta_t
+            if t > 0:
+                x_t_rev = mu_theta_t + sigma_thata_t * torch.normal(0, 1, size=x_t_rev.shape).cuda()
+            else:
+                x_t_rev = mu_theta_t
                 # utils.audio_save_as_img(x_t_rev[0], name='wave_adv_rev_{}.png'.format(t))
         return x_t_rev
     
@@ -441,7 +441,7 @@ if __name__ == '__main__':
     diffusion_hyperparams   = calc_diffusion_hyperparams(**diffusion_config)  # dictionary of all diffusion hyperparameters
 
 
-    data_loader = load_Speech_commands(path=trainset_config['data_path'], batch_size=2)
+    data_loader = load_Qualcomm_keyword(path=trainset_config['data_path'], batch_size=2)
 
     Net = DiffWave(**wavenet_config).cuda()
     model_path = 'DiffWave_Unconditional/exp/ch256_T200_betaT0.02/logs/checkpoint/1000000.pkl'

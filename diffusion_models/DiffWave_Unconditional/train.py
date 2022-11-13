@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-from dataset import load_Speech_commands
+from dataset import load_Qualcomm_keyword
 from util import rescale, find_max_epoch, print_size
 from util import training_loss, calc_diffusion_hyperparams
 
@@ -62,7 +62,7 @@ def train(num_gpus, rank, group_name, output_directory, tensorboard_directory,
             diffusion_hyperparams[key] = diffusion_hyperparams[key].cuda()
 
     # load training data
-    trainloader = load_Speech_commands(path=trainset_config["data_path"], 
+    trainloader = load_Qualcomm_keyword(path=trainset_config["data_path"], 
                                        batch_size=batch_size_per_gpu, 
                                        num_gpus=num_gpus)
     print('Data loaded')

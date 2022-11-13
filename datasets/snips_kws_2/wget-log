@@ -1,0 +1,6 @@
+--2022-11-09 07:47:33--  https://snips-ds-speech-fridge.s3.amazonaws.com/hotwords/open_source/hey_snips_fl_5.0.tar.gz?AWSAccessKeyId=AKIAJ7F26XFKB3NUJOMA
+Resolving snips-ds-speech-fridge.s3.amazonaws.com (snips-ds-speech-fridge.s3.amazonaws.com)... 54.231.172.193
+Connecting to snips-ds-speech-fridge.s3.amazonaws.com (snips-ds-speech-fridge.s3.amazonaws.com)|54.231.172.193|:443... connected.
+HTTP request sent, awaiting response... 403 Forbidden
+2022-11-09 07:47:33 ERROR 403: Forbidden.
+

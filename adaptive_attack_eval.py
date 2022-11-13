@@ -28,7 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('--ddpm_path', type=str, default='diffusion_models/DiffWave_Unconditional/exp/ch256_T200_betaT0.02/logs/checkpoint/1000000.pkl')
     # parser.add_argument('--ddpm_path', type=str, default='diffusion_models/Improved_Diffusion_Unconditional/checkpoints/model084000.pt')
     parser.add_argument('--sample_step', type=int, default=1, help='Total sampling steps')
-    parser.add_argument('--t', type=int, default=10, help='Sampling noise scale')
+    parser.add_argument('--t', type=int, default=1, help='Sampling noise scale')
     parser.add_argument('--t_delta', type=int, default=15, help='Perturbation range of sampling noise scale')
     parser.add_argument('--rand_t', action='store_true', default=False, help='Decide if randomize sampling noise scale')
     parser.add_argument('--diffusion_type', type=str, default='ddpm', help='[ddpm, sde]')
@@ -37,9 +37,9 @@ if __name__ == '__main__':
 
     '''attack arguments'''
     parser.add_argument('--attack', type=str, choices=['CW', 'Qin-I', 'Kenansville', 'FAKEBOB', 'SirenAttack'], default='CW')
-    parser.add_argument('--defense', type=str, choices=['Diffusion', 'Diffusion-Spec', 'AS', 'MS', 'DS', 'LPF', 'BPF', 'FeCo', 'None'], default='Diffusion')
+    parser.add_argument('--defense', type=str, choices=['Diffusion', 'Diffusion-Spec', 'AS', 'MS', 'DS', 'LPF', 'BPF', 'FeCo', 'DefenseGAN', 'None'], default='None')
     parser.add_argument('--bound_norm', type=str, choices=['linf', 'l2'], default='linf')
-    parser.add_argument('--eps', type=int, default=131)
+    parser.add_argument('--eps', type=int, default=65)
     parser.add_argument('--max_iter_1', type=int, default=10)
     parser.add_argument('--max_iter_2', type=int, default=0)
     parser.add_argument('--eot_attack_size', type=int, default=1)
@@ -48,11 +48,11 @@ if __name__ == '__main__':
 
     '''device arguments'''
     parser.add_argument("--dataload_workers_nums", type=int, default=8, help='number of workers for dataloader')
-    parser.add_argument("--batch_size", type=int, default=2, help='batch size')
-    parser.add_argument('--gpu', type=int, default=1)
+    parser.add_argument("--batch_size", type=int, default=20, help='batch size')
+    parser.add_argument('--gpu', type=int, default=0)
 
     '''file saving arguments'''
-    parser.add_argument('--save_path', default='_Spec_Samples')
+    parser.add_argument('--save_path', default=None)
 
     args = parser.parse_args()
 
@@ -94,6 +94,8 @@ if __name__ == '__main__':
         raise NotImplementedError(f'Unknown classifier type: {args.classifier_type}!')
 
     # classifier_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/resnext29_8_64_sgd_plateau_bs96_lr1.0e-02_wd1.0e-02/1663209840164-best-acc.pth'
+    # classifier_path = '/home/shutong/project/Diffusion_Model_for_Audio_Defense_Release/audio_models/ConvNets_SpeechCommands/checkpoints/resnext29_8_64_sgd_plateau_bs96_lr1.0e-02_wd1.0e-02/advtr-best-robust-acc.pth'
+    classifier_path = 'audio_models/ConvNets_SpeechCommands/checkpoints/jacobian_reg_resnext29_8_64_sgd_plateau_bs96_lr1.0e-02_wd1.0e-02/reg=1e-08-best-robust-acc.pth'
     Classifier = create_model(classifier_path)
     if use_gpu:
         torch.backends.cudnn.benchmark = True
@@ -156,6 +158,10 @@ if __name__ == '__main__':
         elif args.defense == 'FeCo':
             from transforms.feature_defense import *
             Defender = FeCo(param=0.2)
+            defense_type = 'wave'
+        elif args.defense == 'DefenseGAN':
+            from gan_models.DefenseGAN import DefenseGAN
+            Defender = DefenseGAN(lr=1e2)
             defense_type = 'wave'
         else:
             raise NotImplementedError(f'Unknown defense: {args.defense}!')
@@ -271,9 +277,9 @@ if __name__ == '__main__':
                 waveforms_adv = waveforms_adv / (2**15)
             waveforms_adv = torch.tensor(waveforms_adv, dtype=waveforms.dtype).to(waveforms.device)
         
-        '''for plot only'''
-        waveforms_adv_diffusion = AS_MODEL.defender.model._diffusion(waveforms_adv)
-        waveforms_adv_reverse = AS_MODEL.defender.model._reverse(waveforms_adv_diffusion)
+        # '''for plot only'''
+        # waveforms_adv_diffusion = AS_MODEL.defender.model._diffusion(waveforms_adv)
+        # waveforms_adv_reverse = AS_MODEL.defender.model._reverse(waveforms_adv_diffusion)
 
         '''denoised adversarial audio'''
         if AS_MODEL.defense_type == 'wave':
